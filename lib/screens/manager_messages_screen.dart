@@ -1,4 +1,4 @@
-// ignore_for_file: unused_element, unused_field
+﻿// ignore_for_file: unused_element, unused_field
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -14,7 +14,7 @@ import 'package:hotel_lux_os/screens/condu_profile_screen.dart';
 import 'package:hotel_lux_os/screens/intervenants_screen.dart';
 import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
 
 // ── Color constants ───────────────────────────────────────────────────────────
 const _kMsgBg = Color(0xFF070707);

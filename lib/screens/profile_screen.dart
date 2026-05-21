@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:hotel_lux_os/providers/hotel_provider.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {

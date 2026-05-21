@@ -17,7 +17,7 @@ import 'package:hotel_lux_os/widgets/google_address_picker_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
 
 const _kThreadBg = Color(0xFF070707);
 const _kThreadCard = Color(0xFF111111);

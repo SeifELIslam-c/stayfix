@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:hotel_lux_os/models/hotel_models.dart';
 import 'package:hotel_lux_os/providers/hotel_provider.dart';
 import 'package:hotel_lux_os/screens/add_staff_screen.dart';
@@ -7,7 +7,7 @@ import 'package:hotel_lux_os/screens/profile_screen.dart';
 import 'package:hotel_lux_os/screens/room_list_screen.dart';
 import 'package:hotel_lux_os/screens/selection_screen.dart';
 import 'package:hotel_lux_os/screens/supervisor_dashboard.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
 import 'package:provider/provider.dart';
 
 class DashboardScreen extends StatefulWidget {

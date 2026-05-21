@@ -16,7 +16,7 @@ import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:hotel_lux_os/widgets/google_address_picker_screen.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
 
 const _kBg = Color(0xFF070707);
 const _kCard = Color(0xFF111111);

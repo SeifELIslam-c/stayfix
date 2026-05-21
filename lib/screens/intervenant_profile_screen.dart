@@ -10,7 +10,7 @@ import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
 import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
