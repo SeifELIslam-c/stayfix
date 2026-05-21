@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Stayfix Job</title>
+    <style>
+        /* نفس ألوان التطبيق المستوحاة من كود فلاتر */
+        :root {
+            --bg-black: #000000;
+            --surface-dark: #121212;
+            --text-white: #ffffff;
+            --text-grey: #9e9e9e; 
+            --accent-amber: #ffc107; 
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-black);
+            color: var(--text-white);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: var(--bg-black);
+            padding: 24px;
+        }
+
+        .content-box {
+            background-color: var(--surface-dark);
+            border-radius: 12px;
+            padding: 32px;
+            margin-top: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        /* أيقونة القفل مشابهة لـ LucideIcons.lock */
+        .lock-icon {
+            width: 40px;
+            height: 40px;
+            stroke: var(--text-white);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin: 0 0 8px 0;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: var(--text-grey);
+            font-size: 16px;
+            margin: 0 0 32px 0;
+        }
+
+        h2 {
+            color: var(--accent-amber);
+            font-size: 20px;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        p, li {
+            color: #cccccc;
+            font-size: 15px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: var(--text-white);
+        }
+
+        /* أزرار تغيير اللغة */
+        .lang-switch {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .lang-btn {
+            background-color: transparent;
+            color: var(--text-grey);
+            border: 1px solid var(--text-grey);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+
+        .lang-btn.active {
+            background-color: var(--text-white);
+            color: var(--bg-black);
+            border-color: var(--text-white);
+        }
+
+        .fr-content {
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: var(--text-grey);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <svg class="lock-icon" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <h1>Privacy Policy</h1>
+        <p class="subtitle">Stayfix Job - Staff Application</p>
+    </div>
+
+    <div class="lang-switch">
+        <button class="lang-btn active" id="btn-en" onclick="switchLang('en')">ENGLISH</button>
+        <button class="lang-btn" id="btn-fr" onclick="switchLang('fr')">FRANÇAIS</button>
+    </div>
+
+    <div class="content-box">
+        <!-- English Content -->
+        <div id="content-en" class="en-content">
+            <h2>1. Introduction</h2>
+            <p>Welcome to <strong>Stayfix Job</strong>. This privacy policy explains how we handle the professional data of hotel staff to ensure a transparent and efficient connection with hotel management.</p>
+
+            <h2>2. Information We Collect</h2>
+            <p>To provide you with our features, we collect the following professional data:</p>
+            <ul>
+                <li><strong>Profile & Resume:</strong> Your personal details, skills, and uploaded CV/Resume.</li>
+                <li><strong>Work Availability:</strong> The specific hours and days you declare as available for work.</li>
+                <li><strong>Attendance Records:</strong> Time and date stamps when you perform Check-in and Check-out actions within the app.</li>
+            </ul>
+
+            <h2>3. Data Sharing & Usage</h2>
+            <p>Your data is strictly used to facilitate your employment and daily tasks. <strong>Your Profile, CV, Availability, and Attendance data are shared directly and exclusively with the Hotel Directors/Managers</strong> who use the primary Stayfix Management App.</p>
+
+            <h2>4. Third-Party Services</h2>
+            <p>We use <strong>Firebase (Google)</strong> for secure authentication and database management. Your data is stored securely in the cloud to ensure real-time synchronization with the management team.</p>
+
+            <h2>5. Data Security & Rights</h2>
+            <p>We take your privacy seriously. You have the right to update your CV, modify your availability, or request account deletion through the app settings or by contacting your hotel administration.</p>
+        </div>
+
+        <!-- French Content -->
+        <div id="content-fr" class="fr-content">
+            <h2>1. Introduction</h2>
+            <p>Bienvenue sur <strong>Stayfix Job</strong>. Cette politique de confidentialité explique comment nous traitons les données professionnelles du personnel pour assurer une connexion transparente avec la direction de l'hôtel.</p>
+
+            <h2>2. Informations Collectées</h2>
+            <p>Pour vous offrir nos fonctionnalités, nous collectons les données professionnelles suivantes :</p>
+            <ul>
+                <li><strong>Profil et CV :</strong> Vos informations personnelles, compétences et le CV que vous téléchargez.</li>
+                <li><strong>Disponibilité :</strong> Les heures et jours spécifiques où vous vous déclarez disponible pour travailler.</li>
+                <li><strong>Pointage (Présence) :</strong> L'heure et la date exactes lorsque vous effectuez un Check-in et Check-out via l'application.</li>
+            </ul>
+
+            <h2>3. Partage et Utilisation des Données</h2>
+            <p>Vos données sont strictement utilisées pour faciliter votre travail. <strong>Votre Profil, CV, heures de disponibilité et pointages sont partagés directement et exclusivement avec les directeurs d'hôtel</strong> qui utilisent l'application principale Stayfix.</p>
+
+            <h2>4. Services Tiers</h2>
+            <p>Nous utilisons <strong>Firebase (Google)</strong> pour l'authentification et la base de données. Vos informations sont stockées en toute sécurité dans le cloud pour assurer une synchronisation en temps réel avec la direction.</p>
+
+            <h2>5. Sécurité et Vos Droits</h2>
+            <p>Nous prenons votre vie privée au sérieux. Vous avez le droit de mettre à jour votre CV, de modifier vos disponibilités ou de demander la suppression de votre compte via les paramètres de l'application ou en contactant votre administration.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 Stayfix Job. All rights reserved.
+    </div>
+</div>
+
+<script>
+    function switchLang(lang) {
+        const btnEn = document.getElementById('btn-en');
+        const btnFr = document.getElementById('btn-fr');
+        const contentEn = document.getElementById('content-en');
+        const contentFr = document.getElementById('content-fr');
+
+        if(lang === 'en') {
+            btnEn.classList.add('active');
+            btnFr.classList.remove('active');
+            contentEn.style.display = 'block';
+            contentFr.style.display = 'none';
+        } else {
+            btnFr.classList.add('active');
+            btnEn.classList.remove('active');
+            contentFr.style.display = 'block';
+            contentEn.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>

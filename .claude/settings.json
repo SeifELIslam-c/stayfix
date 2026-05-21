@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Bash(Get-ChildItem -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(Format-Table -Property Name)",
+      "Bash(Get-ChildItem -Path \"d:\\\\projects\\\\hotel_lux_os\" -Force)",
+      "Bash(Select-Object Name, FullName)",
+      "PowerShell(tree \"d:\\\\projects\\\\hotel_lux_os\" -L 2 -Attributes)",
+      "Bash(flutter analyze *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\projects\\\\hotel_lux_os\\\\assets\\\\\" -Recurse | Select-Object FullName)",
+      "Bash(flutter pub *)",
+      "Bash(xargs grep -l \"notifications\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\projects\\\\hotel_lux_os\" -Recurse -Name)",
+      "Bash(Get-ChildItem -Path \"d:\\\\projects\\\\hotel_lux_os\" -Recurse -Directory)",
+      "Bash(Select-Object -First 30)",
+      "Bash(Get-ChildItem -Path \"d:\\\\projects\\\\hotel_lux_os\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(awk -F\"'\" '{print $2}')",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "PowerShell(winget install pngquant 2>&1)",
+      "PowerShell(winget install SharpYuv.oxipng 2>&1)",
+      "PowerShell(python --version)",
+      "PowerShell(pip show Pillow 2>&1)"
+    ]
+  }
+}
