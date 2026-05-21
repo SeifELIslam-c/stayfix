@@ -1,0 +1,94 @@
+workflows:
+  android-release:
+    name: Android Release
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      groups:
+        - app_env
+        - android_signing
+      vars:
+        PACKAGE_NAME: "com.rezzaky.stayfix"
+
+    scripts:
+      - name: Write .env file
+        script: |
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY" > .env
+          echo "VPS_MEDIA_BASE_URL=$VPS_MEDIA_BASE_URL" >> .env
+
+      - name: Write key.properties
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > android/app/keystore.jks
+          cat >> android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=keystore.jks
+          EOF
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build Android release AAB
+        script: flutter build appbundle --release
+
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      groups:
+        - app_env
+        - ios_signing
+      vars:
+        BUNDLE_ID: "com.rezzaky.stayfix"
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Write .env file
+        script: |
+          echo "GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY" > .env
+          echo "VPS_MEDIA_BASE_URL=$VPS_MEDIA_BASE_URL" >> .env
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Install CocoaPods
+        script: find . -name "Podfile" -execdir pod install \;
+
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Build iOS release IPA
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
