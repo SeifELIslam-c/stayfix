@@ -501,7 +501,6 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final keyboardOpen = mediaQuery.viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: kAuthPanel,
@@ -513,7 +512,6 @@ class _AuthScreenState extends State<AuthScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isCompactHeight = constraints.maxHeight < 760;
-            final isKeyboardScrollable = _isLogin && keyboardOpen;
             final heroHeight =
                 (constraints.maxHeight * (_isLogin ? 0.52 : 0.40)).clamp(
               _isLogin
@@ -536,11 +534,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     top: heroHeight - 26,
                     left: 0,
                     right: 0,
-                    bottom: isKeyboardScrollable ? 0.0 : null,
+                    bottom: 0,
                     child: _AuthPanel(
                       bottomInset: mediaQuery.padding.bottom,
-                      scrollable: isKeyboardScrollable,
-                      expandToFill: isKeyboardScrollable,
                       child: _isLogin
                           ? _buildLoginContent(isCompactHeight)
                           : _buildRegisterContent(isCompactHeight),
@@ -1000,69 +996,56 @@ class _AuthPanel extends StatelessWidget {
   const _AuthPanel({
     required this.child,
     required this.bottomInset,
-    required this.scrollable,
-    required this.expandToFill,
   });
 
   final Widget child;
   final double bottomInset;
-  final bool scrollable;
-  final bool expandToFill;
 
   @override
   Widget build(BuildContext context) {
-    final panel = Transform.translate(
-      offset: const Offset(0, -26),
-      child: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          color: kAuthPanel,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(40),
-            topRight: Radius.circular(40),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0x12000000),
-              blurRadius: 30,
-              offset: Offset(0, -8),
+    return SizedBox.expand(
+      child: Transform.translate(
+        offset: const Offset(0, -26),
+        child: Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: kAuthPanel,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(40),
+              topRight: Radius.circular(40),
             ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          bottom: false,
-          child: scrollable
-              ? LayoutBuilder(
-                  builder: (context, constraints) {
-                    final padding =
-                        EdgeInsets.fromLTRB(20, 14, 20, bottomInset + 2);
-                    return SingleChildScrollView(
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: padding,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight - padding.vertical,
-                        ),
-                        child: child,
-                      ),
-                    );
-                  },
-                )
-              : Padding(
-                  padding: EdgeInsets.fromLTRB(20, 14, 20, bottomInset + 2),
-                  child: child,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x12000000),
+                blurRadius: 30,
+                offset: Offset(0, -8),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final padding =
+                    EdgeInsets.fromLTRB(20, 14, 20, bottomInset + 2);
+                return SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: padding,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight - padding.vertical,
+                    ),
+                    child: child,
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
-
-    if (expandToFill) {
-      return SizedBox.expand(child: panel);
-    }
-
-    return panel;
   }
 }
 
