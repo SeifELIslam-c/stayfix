@@ -18,7 +18,7 @@ import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
 import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
 import 'package:hotel_lux_os/screens/villa_profile_screen.dart';
 import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 // ── Google Maps API key ───────────────────────────────────────────────────────
 const _kFallbackMapsKey = 'AIzaSyDmUG3v9t26WwvrxC068sgwKGTvgalt7IM';

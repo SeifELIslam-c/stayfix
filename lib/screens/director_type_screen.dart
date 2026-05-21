@@ -6,7 +6,7 @@ import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
 import 'package:hotel_lux_os/screens/manager_profile_config.dart';
 import 'package:hotel_lux_os/screens/other_property_dashboard.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class DirectorTypeScreen extends StatefulWidget {
   const DirectorTypeScreen({super.key});

@@ -11,7 +11,7 @@ import 'package:hotel_lux_os/screens/dashboard_screen.dart';
 import 'package:hotel_lux_os/screens/manager_navigation.dart';
 import 'package:hotel_lux_os/screens/terms_screen.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 const kAuthBg = Color(0xFF050505);

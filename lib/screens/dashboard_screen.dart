@@ -7,7 +7,7 @@ import 'package:hotel_lux_os/screens/profile_screen.dart';
 import 'package:hotel_lux_os/screens/room_list_screen.dart';
 import 'package:hotel_lux_os/screens/selection_screen.dart';
 import 'package:hotel_lux_os/screens/supervisor_dashboard.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 class DashboardScreen extends StatefulWidget {

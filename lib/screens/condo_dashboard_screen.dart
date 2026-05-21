@@ -18,7 +18,7 @@ import 'package:hotel_lux_os/screens/villa_profile_screen.dart';
 import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:http/http.dart' as http;
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 

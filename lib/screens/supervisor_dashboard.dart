@@ -5,7 +5,7 @@ import 'package:hotel_lux_os/screens/add_staff_screen.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/profile_screen.dart';
 import 'package:hotel_lux_os/screens/supervisor_rooms_screen.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 class SupervisorDashboard extends StatelessWidget {

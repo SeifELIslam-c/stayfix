@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class ManagerProfileOption {
   const ManagerProfileOption({

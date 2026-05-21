@@ -11,7 +11,7 @@ import 'package:hotel_lux_os/screens/intervenants_screen.dart';
 import 'package:hotel_lux_os/screens/create_manager_offer_screen.dart';
 import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 // ── Color constants ───────────────────────────────────────────────────────────
 const _kOffersBg = Color(0xFF070707);

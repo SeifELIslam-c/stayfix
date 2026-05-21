@@ -7,7 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:http/http.dart' as http;
-import 'package:lucide_icons_flutter/lucide_icons_flutter.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 const _kPickerBg = Color(0xFF070707);
 const _kPickerCard = Color(0xFF111111);
