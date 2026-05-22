@@ -53,5 +53,7 @@
 	<string>Stayfix uses the microphone so you can record and send voice messages.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Stayfix uses your photo library so you can share gallery images in messages.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
