@@ -1,0 +1,17 @@
+name: lucide_icons
+description: Patched lucide_icons - uses IconData directly, compatible with Flutter 3.27+
+version: 0.257.0
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  fonts:
+    - family: Lucide
+      fonts:
+        - asset: assets/lucide.ttf

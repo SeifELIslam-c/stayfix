@@ -46,6 +46,10 @@ dependencies:
   google_sign_in: ^6.2.2
   country_picker: ^2.0.27
 
+dependency_overrides:
+  lucide_icons:
+    path: packages/lucide_icons
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
