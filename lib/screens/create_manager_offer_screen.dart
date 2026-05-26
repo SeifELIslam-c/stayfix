@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/condu_profile_screen.dart';
+import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
+import 'package:hotel_lux_os/services/property_scope_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -21,15 +22,18 @@ const _kField = Color(0xFF181818);
 
 // ── Departments & specialties ─────────────────────────────────────────────────
 const _kDepartments = [
+  'Propose au menage',
   'Maintenance generale',
   "Main-d'oeuvre qualifiee",
-  'Prepose aux chambres',
-  'Houseman',
-  'Concierge',
-  'Menage',
 ];
 
 const _kSpecialties = <String, List<String>>{
+  'Propose au menage': [
+    'Entretien menager',
+    'Nettoyage des espaces communs',
+    'Gestion du linge',
+    'Preparation des appartements',
+  ],
   'Maintenance generale': [
     'Bricolage',
     'Aide generale',
@@ -44,30 +48,6 @@ const _kSpecialties = <String, List<String>>{
     'Menuiserie generale / Menuiserie',
     'Peinture decorative / Peinture professionnelle',
     'Soudure industrielle',
-  ],
-  'Prepose aux chambres': [
-    'Nettoyage des chambres',
-    'Gestion du linge',
-    'Remise en etat des chambres',
-  ],
-  'Houseman': [
-    'Transport bagages',
-    'Entretien couloirs',
-    'Soutien Housekeeping',
-  ],
-  'Concierge': [
-    'Accueil clients',
-    'Service information',
-    'Gestion des bagages',
-    'Reservations & services',
-    'Assistance VIP',
-  ],
-  'Menage': [
-    'Nettoyage des chambres',
-    'Nettoyage espaces communs',
-    'Gestion du linge',
-    'Desinfection & hygiene',
-    'Remise en etat des chambres',
   ],
 };
 
@@ -143,15 +123,48 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       return;
     }
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('hotels')
-          .where('ownerId', isEqualTo: uid)
-          .limit(1)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
-        final d = snap.docs.first.data();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final userData = userDoc.data() ?? const <String, dynamic>{};
+      final accountType = PropertyScopeService.normalizeAccountType(userData);
+      final scopedPropertyIds = PropertyScopeService.scopedPropertyIds(userData);
+
+      DocumentSnapshot<Map<String, dynamic>>? propertyDoc;
+      if (accountType == 'apartment_account' && scopedPropertyIds.isEmpty) {
+        final byAccount = await FirebaseFirestore.instance
+            .collection('hotels')
+            .where('accountUid', isEqualTo: uid)
+            .limit(1)
+            .get();
+        if (byAccount.docs.isNotEmpty) {
+          propertyDoc = byAccount.docs.first;
+        }
+      } else if (scopedPropertyIds.isNotEmpty) {
+        for (final propertyId in scopedPropertyIds) {
+          final doc = await FirebaseFirestore.instance
+              .collection('hotels')
+              .doc(propertyId)
+              .get();
+          if (doc.exists) {
+            propertyDoc = doc;
+            break;
+          }
+        }
+      } else {
+        final snap = await FirebaseFirestore.instance
+            .collection('hotels')
+            .where('ownerId', isEqualTo: uid)
+            .limit(1)
+            .get();
+        if (snap.docs.isNotEmpty) {
+          propertyDoc = snap.docs.first;
+        }
+      }
+
+      if (propertyDoc != null && mounted) {
+        final d = propertyDoc.data() ?? const <String, dynamic>{};
         setState(() {
-          _condoId = snap.docs.first.id;
+          _condoId = propertyDoc!.id;
           _condoName = (d['name'] as String?)?.trim();
           _condoAddress = (d['location'] as String?)?.trim();
         });
@@ -260,7 +273,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
 
   Future<void> _pickPhotos() async {
     try {
-      final files = await _imagePicker.pickMultiImage(imageQuality: 88);
+      final files = await _imagePicker.pickMultiImage(imageQuality: 82);
       if (files.isEmpty || !mounted) return;
       setState(() {
         _pendingPhotos.addAll(
@@ -344,6 +357,10 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       final uid = widget.uid.isNotEmpty
           ? widget.uid
           : FirebaseAuth.instance.currentUser?.uid ?? '';
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final userData = userDoc.data() ?? const <String, dynamic>{};
+      final accountType = PropertyScopeService.normalizeAccountType(userData);
       final timeStr = _formatTime(_requestedTime!);
       final uploadedPhotos = <Map<String, dynamic>>[];
       for (final photo in _pendingPhotos) {
@@ -388,10 +405,15 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
         'department': _department,
         'specialty': _specialty,
         'category': _specialty,
-        'status': 'ouverte',
+        'status': 'open',
+        'targetApp': 'stayfix_job',
+        'createdByUid': uid,
         'createdByManagerId': uid,
+        'createdByRole': accountType.isEmpty ? 'manager' : accountType,
         'condoId': _condoId,
         'condoName': _condoName ?? '',
+        'apartmentId': _condoId,
+        'apartmentName': _condoName ?? '',
         'condoAddress': _condoAddress ?? '',
         'requestedDate': Timestamp.fromDate(_requestedDate!),
         'requestedTime': timeStr,
@@ -399,11 +421,12 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
         'urgency': _urgency,
         'budgetAmount':
             _isNegotiable ? null : double.tryParse(_budgetCtrl.text.trim()),
-        'budgetCurrency': '\$',
+        'budgetCurrency': 'DZD',
         'isNegotiable': _isNegotiable,
         'specialInstructions': _instructionsCtrl.text.trim(),
         'proposalCount': 0,
         'assignedToId': null,
+        'assignedWorkerId': null,
         'assignedWorkerName': null,
         'attachments': uploadedDocument == null
             ? <Map<String, dynamic>>[]
@@ -451,6 +474,8 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
           ),
           Expanded(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,7 +490,8 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ConduProfileScreen()),
+                        builder: (_) => buildManagerProfileScreen(),
+                      ),
                     ),
                   ),
 
@@ -1376,7 +1402,9 @@ class _BudgetCard extends StatelessWidget {
               Switch(
                 value: isNegotiable,
                 onChanged: onToggle,
-                activeThumbColor: kAuthGold,
+                activeTrackColor: const Color(0xFF22C55E),
+                inactiveTrackColor: Colors.white24,
+                activeThumbColor: Colors.white,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],

@@ -4,11 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hotel_lux_os/providers/hotel_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth_screen.dart';
-import 'director_type_screen.dart';
+import 'manager_navigation.dart';
 
 const Color _termsBg = Color(0xFF050505);
 const Color _termsPanel = Color(0xFFFFFDF8);
@@ -163,9 +165,11 @@ class _TermsScreenState extends State<TermsScreen> {
       }
 
       if (!mounted) return;
+      final nextScreen = await resolveManagerDestination();
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DirectorTypeScreen()),
+        MaterialPageRoute(builder: (_) => nextScreen),
       );
     } catch (e) {
       if (!mounted) return;
@@ -179,7 +183,7 @@ class _TermsScreenState extends State<TermsScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signOut();
+      await Provider.of<HotelProvider>(context, listen: false).logout();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('userId');
 

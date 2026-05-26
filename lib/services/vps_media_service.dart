@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -58,15 +59,18 @@ class VpsUploadedMedia {
 class VpsMediaService {
   VpsMediaService._();
 
-  static const String _fallbackBaseUrl = 'http://159.89.98.134:8080';
-  static const String _publicFallbackBaseUrl = 'http://159.89.98.134';
+  static const String _fallbackBaseUrl = 'https://159.89.98.134:8080';
+  static const String _publicFallbackBaseUrl = 'https://159.89.98.134';
 
   static Future<String> _baseUrl() async {
     final raw = await AppEnv.get(
       'VPS_MEDIA_BASE_URL',
       fallback: _fallbackBaseUrl,
     );
-    return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
+    final normalized =
+        raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
+    _ensureSecureTransport(normalized);
+    return normalized;
   }
 
   static Future<Map<String, String>> _headers() async {
@@ -238,5 +242,17 @@ class VpsMediaService {
       default:
         return 'image/jpeg';
     }
+  }
+
+  static void _ensureSecureTransport(String url) {
+    if (kIsWeb) return;
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme.toLowerCase() == 'https') {
+      return;
+    }
+    throw StateError(
+      'StayFix requires an HTTPS media endpoint on iOS App Store builds.',
+    );
   }
 }

@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:hotel_lux_os/providers/hotel_provider.dart';
+import 'package:hotel_lux_os/screens/privacy_account_center_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -80,6 +81,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildField("Nouveau mot de passe (Optionnel)", _passwordController,
                 LucideIcons.lock,
                 isPassword: true),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PrivacyAccountCenterScreen(),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.shieldCheck),
+                label: const Text("CONFIDENTIALITE ET COMPTE"),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => showDeleteAccountFlow(context),
+                icon: const Icon(LucideIcons.trash2),
+                label: const Text("SUPPRIMER MON COMPTE"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFFF7B7B),
+                  side: const BorderSide(color: Color(0x66FF7B7B)),
+                ),
+              ),
+            ),
             const Spacer(),
             SizedBox(
               width: double.infinity,

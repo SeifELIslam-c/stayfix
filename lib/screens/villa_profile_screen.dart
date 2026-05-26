@@ -11,10 +11,13 @@ import 'package:http/http.dart' as http;
 import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
 import 'package:hotel_lux_os/screens/intervenants_screen.dart';
+import 'package:hotel_lux_os/screens/privacy_account_center_screen.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:hotel_lux_os/widgets/google_address_picker_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
+import 'package:hotel_lux_os/providers/hotel_provider.dart';
 
 const _kBg = Color(0xFF070707);
 const _kCard = Color(0xFF111111);
@@ -396,7 +399,7 @@ class _VillaProfileScreenState extends State<VillaProfileScreen> {
     );
 
     if (confirmed != true || !mounted) return;
-    await FirebaseAuth.instance.signOut();
+    await Provider.of<HotelProvider>(context, listen: false).logout();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthScreen()),
@@ -862,10 +865,40 @@ class _VillaProfileScreenState extends State<VillaProfileScreen> {
                 subtitle: 'Langue, rafraichissement et affichage manager.',
                 onTap: _isSaving ? null : () => _openAppPreferences(userData),
               ),
+              _PrefRowData(
+                icon: LucideIcons.shield,
+                title: 'Confidentialite et compte',
+                subtitle:
+                    'Politique de confidentialite, support et suppression du compte.',
+                onTap: _isSaving
+                    ? null
+                    : () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PrivacyAccountCenterScreen(),
+                          ),
+                        ),
+              ),
             ],
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: OutlinedButton.icon(
+              onPressed: _isSaving ? null : () => showDeleteAccountFlow(context),
+              icon: const Icon(LucideIcons.trash2),
+              label: const Text('Supprimer mon compte'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFFF7B7B),
+                side: const BorderSide(color: Color(0x66FF7B7B)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 12)),
         SliverToBoxAdapter(
           child: _LogoutButton(
             isLoading: _isSaving,
@@ -2214,7 +2247,7 @@ class _TogglePreferencesScreenState extends State<_TogglePreferencesScreen> {
                 Switch(
                   value: currentValue,
                   activeThumbColor: Colors.black,
-                  activeTrackColor: kAuthGold,
+                  activeTrackColor: const Color(0xFF22C55E),
                   inactiveThumbColor: Colors.white70,
                   inactiveTrackColor: Colors.white24,
                   onChanged: (value) {
@@ -2521,7 +2554,7 @@ class _ToggleCard extends StatelessWidget {
           Switch(
             value: value,
             activeThumbColor: Colors.black,
-            activeTrackColor: kAuthGold,
+            activeTrackColor: const Color(0xFF22C55E),
             inactiveThumbColor: Colors.white70,
             inactiveTrackColor: Colors.white24,
             onChanged: onChanged,

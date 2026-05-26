@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,12 +9,13 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:hotel_lux_os/screens/auth_screen.dart';
+import 'package:hotel_lux_os/screens/building_management_screen.dart';
 import 'package:hotel_lux_os/screens/intervenants_screen.dart';
-import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
 import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
 import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
 import 'package:hotel_lux_os/screens/privacy_account_center_screen.dart';
-import 'package:hotel_lux_os/services/property_scope_service.dart';
+import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
 import 'package:hotel_lux_os/widgets/google_address_picker_screen.dart';
@@ -36,6 +37,7 @@ class _ProfilePageData {
     required this.condoName,
     required this.condoLocation,
     required this.availableWorkers,
+    required this.apartmentCount,
   });
 
   final Map<String, dynamic> userData;
@@ -43,6 +45,7 @@ class _ProfilePageData {
   final String? condoName;
   final String? condoLocation;
   final int availableWorkers;
+  final int apartmentCount;
 }
 
 class _PreferenceToggleItem {
@@ -59,17 +62,25 @@ class _PreferenceToggleItem {
   final IconData icon;
 }
 
-class ConduProfileScreen extends StatefulWidget {
-  const ConduProfileScreen({super.key});
+class ImmeubleProfileScreen extends StatefulWidget {
+  const ImmeubleProfileScreen({
+    super.key,
+    required this.propertyType,
+  });
+
+  final String propertyType;
 
   @override
-  State<ConduProfileScreen> createState() => _ConduProfileScreenState();
+  State<ImmeubleProfileScreen> createState() => _ImmeubleProfileScreenState();
 }
 
-class _ConduProfileScreenState extends State<ConduProfileScreen> {
+class _ImmeubleProfileScreenState extends State<ImmeubleProfileScreen> {
   late Future<_ProfilePageData> _dataFuture;
   int _refreshSeed = 0;
   bool _isSaving = false;
+
+  String get _uid =>
+      FirebaseAuth.instance.currentUser?.uid ?? AppSessionService.currentUserId;
 
   @override
   void initState() {
@@ -78,7 +89,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
   }
 
   void _reloadData() {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final uid = _uid;
     _dataFuture = _loadData(uid);
   }
 
@@ -95,45 +106,47 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
     final workersSnap = results[1] as QuerySnapshot<Map<String, dynamic>>;
 
     final userData = userDoc.data() ?? <String, dynamic>{};
-    final accountType = PropertyScopeService.normalizeAccountType(userData);
-    final scopedPropertyIds = PropertyScopeService.scopedPropertyIds(userData);
+    final accountType =
+        (userData['accountType'] as String?)?.trim().toLowerCase();
+    final propertyIds = ((userData['propertyIds'] as List?) ?? const [])
+        .map((value) => '$value')
+        .where((value) => value.trim().isNotEmpty)
+        .toList();
     String? condoId;
     String? condoName;
     String? condoLocation;
+    var apartmentCount = 0;
 
-    DocumentSnapshot<Map<String, dynamic>>? condoDoc;
-    if (accountType == 'apartment_account' && scopedPropertyIds.isEmpty) {
-      final directApartment = await FirebaseFirestore.instance
-          .collection('hotels')
-          .where('accountUid', isEqualTo: uid)
-          .limit(1)
-          .get();
-      if (directApartment.docs.isNotEmpty) {
-        condoDoc = directApartment.docs.first;
-      }
-    } else if (scopedPropertyIds.isNotEmpty) {
-      for (final propertyId in scopedPropertyIds) {
+    DocumentSnapshot<Map<String, dynamic>>? propertyDoc;
+    if (accountType == 'manager' || accountType == 'concierge') {
+      for (final propertyId in propertyIds) {
         final doc = await FirebaseFirestore.instance
             .collection('hotels')
             .doc(propertyId)
             .get();
         if (doc.exists) {
-          condoDoc = doc;
+          propertyDoc = doc;
           break;
         }
       }
     } else {
-      final condoSnap = await FirebaseFirestore.instance
+      final propertySnap = await FirebaseFirestore.instance
           .collection('hotels')
           .where('ownerId', isEqualTo: uid)
-          .limit(1)
           .get();
-      if (condoSnap.docs.isNotEmpty) {
-        condoDoc = condoSnap.docs.first;
+      apartmentCount = propertySnap.docs
+          .where((doc) =>
+              ((doc.data()['status'] as String?)?.trim().toLowerCase() ??
+                  'active') !=
+              'deleted')
+          .length;
+      if (propertySnap.docs.isNotEmpty) {
+        propertyDoc = propertySnap.docs.first;
       }
     }
 
-    if (condoDoc != null) {
+    if (propertyDoc != null && propertyDoc.exists) {
+      final condoDoc = propertyDoc;
       condoId = condoDoc.id;
       final condoData = condoDoc.data() ?? const <String, dynamic>{};
       condoName = (condoData['name'] as String?)?.trim();
@@ -153,6 +166,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
       condoName: condoName,
       condoLocation: condoLocation,
       availableWorkers: availableWorkers,
+      apartmentCount: apartmentCount,
     );
   }
 
@@ -194,7 +208,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
       _showSnack(successMessage);
     } catch (error) {
       _showSnack('Impossible d enregistrer pour le moment.');
-      debugPrint('Condo profile save error: $error');
+      debugPrint('Immeuble profile save error: $error');
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -255,37 +269,6 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
         'phoneCountryIso': countryIso.toUpperCase(),
       }, SetOptions(merge: true));
     }, successMessage: 'Telephone mis a jour.');
-  }
-
-  Future<void> _updateCondo({
-    required String condoName,
-    required String condoAddress,
-    required String? condoId,
-  }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final cleanName = condoName.trim();
-    final cleanAddress = condoAddress.trim();
-    if (cleanName.isEmpty || cleanAddress.isEmpty) return;
-
-    await _withSaving(() async {
-      final condos = FirebaseFirestore.instance.collection('hotels');
-      if (condoId != null && condoId.isNotEmpty) {
-        await condos.doc(condoId).set({
-          'name': cleanName,
-          'location': cleanAddress,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } else {
-        await condos.add({
-          'name': cleanName,
-          'location': cleanAddress,
-          'ownerId': user.uid,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    }, successMessage: 'Condo mis a jour.');
   }
 
   Future<void> _savePreferenceGroup(
@@ -499,24 +482,14 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
   }
 
   Future<void> _openCondoEditor(_ProfilePageData data) async {
-    final mapsKey = await _readMapsKey();
-    if (!mounted) return;
-    final result = await showModalBottomSheet<Map<String, String>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CondoEditSheet(
-        initialName: data.condoName ?? '',
-        initialAddress: data.condoLocation ?? '',
-        apiKey: mapsKey,
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const BuildingManagementScreen(),
       ),
     );
-    if (result == null) return;
-    await _updateCondo(
-      condoName: result['name'] ?? '',
-      condoAddress: result['address'] ?? '',
-      condoId: data.condoId,
-    );
+    if (!mounted) return;
+    await _refresh();
   }
 
   Future<void> _openNotificationPreferences(
@@ -588,7 +561,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
               keyName: 'shareExactCondoAddress',
               title: 'Partager l adresse exacte',
               subtitle:
-                  'Montrer l adresse complete du condo uniquement si necessaire.',
+                  'Montrer l adresse complete de l immeuble uniquement si necessaire.',
               icon: LucideIcons.mapPin,
             ),
             _PreferenceToggleItem(
@@ -678,7 +651,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) return const AuthScreen();
+    if (firebaseUser == null || _uid.isEmpty) return const AuthScreen();
 
     return Scaffold(
       backgroundColor: _kBg,
@@ -742,6 +715,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
                 condoName: null,
                 condoLocation: null,
                 availableWorkers: 0,
+                apartmentCount: 0,
               );
           return _buildContent(firebaseUser, data);
         },
@@ -752,42 +726,15 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
   Widget _buildContent(User firebaseUser, _ProfilePageData data) {
     final userData = data.userData;
     final displayName = _resolveDisplayName(firebaseUser, userData);
-    final accountType = PropertyScopeService.normalizeAccountType(userData);
-    final isApartmentManager = accountType == 'apartment_manager';
-    final isApartmentAccount = accountType == 'apartment_account';
-    final isScopedApartment = isApartmentManager || isApartmentAccount;
-    final roleLabel = isApartmentManager
-        ? 'Gestionnaire'
-        : isApartmentAccount
-            ? 'Compte appartement'
-            : _nonEmpty((userData['propertyProfileLabel'] as String?)?.trim()) ??
-                'Proprietaire d appartement / condo';
-    final propertyCardTitle = isApartmentManager
-        ? 'Appartement gere'
-        : isApartmentAccount
-            ? 'Votre appartement'
-            : 'Votre condo';
-    final propertyEmptyTitle = isApartmentManager
-        ? 'Appartement non assigne'
-        : isApartmentAccount
-            ? 'Appartement non configure'
-            : 'Ajouter votre condo';
-    final propertyEmptySubtitle = isApartmentManager
-        ? 'Appartement rattache a votre compte gestionnaire'
-        : isApartmentAccount
-            ? 'Nom + adresse de votre appartement'
-            : 'Nom + adresse du condo';
-    final propertyActionLabel = isScopedApartment ? 'Voir' : 'Modifier';
-    final overviewTitle = isApartmentManager
-        ? 'Apercu gestionnaire'
-        : isApartmentAccount
-            ? 'Apercu appartement'
-            : 'Apercu manager';
-    final profileTitle = isApartmentManager
-        ? 'Profil gestionnaire'
-        : isApartmentAccount
-            ? 'Profil appartement'
-            : 'Profil manager';
+    final accountType =
+        (userData['accountType'] as String?)?.trim().toLowerCase();
+    final roleLabel = accountType == 'concierge'
+        ? 'Concierge immeuble'
+        : accountType == 'manager'
+            ? 'Gestionnaire immeuble'
+            : widget.propertyType == 'rental_building'
+                ? 'Immeuble locatif'
+                : 'Immeuble copropriete';
     final email =
         _nonEmpty((userData['email'] as String?)?.trim()) ?? firebaseUser.email;
     final phone = _nonEmpty((userData['phone'] as String?)?.trim());
@@ -812,7 +759,11 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
             initials: initials,
             onBack: () => Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => buildManagerHomeScreen()),
+              MaterialPageRoute(
+                builder: (_) => buildManagerHomeScreen(
+                  propertyType: widget.propertyType,
+                ),
+              ),
             ),
             onCameraTap: _openPhotoPicker,
           ),
@@ -822,18 +773,20 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
           child: _CondoCard(
             name: data.condoName,
             location: data.condoLocation,
-            title: propertyCardTitle,
-            emptyTitle: propertyEmptyTitle,
-            emptySubtitle: propertyEmptySubtitle,
-            actionLabel: propertyActionLabel,
-            onTap: _isSaving || isScopedApartment
-                ? null
-                : () => _openCondoEditor(data),
+            onTap: _isSaving ? null : () => _openCondoEditor(data),
+            titleOverride: data.apartmentCount > 0
+                ? 'Ajouter un autre appartement'
+                : 'Ajouter un appartement',
+            subtitleOverride: data.apartmentCount > 0
+                ? '${data.apartmentCount} appartement(s) deja cree(s). Ouvrir la gestion immeuble.'
+                : 'Ouvrir la gestion immeuble pour creer votre premier appartement.',
+            actionLabel: 'Gerer',
+            icon: LucideIcons.building2,
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 18)),
-        SliverToBoxAdapter(
-          child: _SectionTitle(title: overviewTitle),
+        const SliverToBoxAdapter(
+          child: _SectionTitle(title: 'Apercu manager'),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverToBoxAdapter(
@@ -847,14 +800,21 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
               context,
               MaterialPageRoute(builder: (_) => const ManagerMessagesScreen()),
             ),
-            onOffres: () => _showSnack('Offres bientot disponibles.'),
-            onNotifications: () =>
-                _showSnack('Notifications bientot disponibles.'),
+            onOffres: () => Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const ManagerOffersScreen()),
+            ),
+            onNotifications: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BuildingManagementScreen(),
+              ),
+            ),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 20)),
-        SliverToBoxAdapter(
-          child: _SectionTitle(title: profileTitle),
+        const SliverToBoxAdapter(
+          child: _SectionTitle(title: 'Profil manager'),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverToBoxAdapter(
@@ -914,7 +874,7 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
                 icon: LucideIcons.shieldCheck,
                 title: 'Confidentialite',
                 subtitle:
-                    'Nom manager, adresse, telephone et exigences de profil.',
+                    'Nom manager, adresse, telephone et informations immeuble.',
                 onTap:
                     _isSaving ? null : () => _openPrivacyPreferences(userData),
               ),
@@ -1003,7 +963,11 @@ class _ConduProfileScreenState extends State<ConduProfileScreen> {
               isActive: false,
               onTap: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => buildManagerHomeScreen()),
+                MaterialPageRoute(
+                  builder: (_) => buildManagerHomeScreen(
+                    propertyType: widget.propertyType,
+                  ),
+                ),
               ),
             ),
             _NavItem(
@@ -1312,20 +1276,20 @@ class _CondoCard extends StatelessWidget {
   const _CondoCard({
     required this.name,
     required this.location,
-    required this.title,
-    required this.emptyTitle,
-    required this.emptySubtitle,
-    required this.actionLabel,
     required this.onTap,
+    this.titleOverride,
+    this.subtitleOverride,
+    this.actionLabel = 'Modifier',
+    this.icon = LucideIcons.building2,
   });
 
   final String? name;
   final String? location;
-  final String title;
-  final String emptyTitle;
-  final String emptySubtitle;
-  final String actionLabel;
   final VoidCallback? onTap;
+  final String? titleOverride;
+  final String? subtitleOverride;
+  final String actionLabel;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1349,8 +1313,7 @@ class _CondoCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: kAuthGold.withValues(alpha: 0.30)),
               ),
-              child:
-                  const Icon(LucideIcons.building2, color: kAuthGold, size: 18),
+              child: Icon(icon, color: kAuthGold, size: 18),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1358,17 +1321,10 @@ class _CondoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      color: kAuthGold,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    name?.isNotEmpty == true ? name! : emptyTitle,
+                    titleOverride ??
+                        (name?.isNotEmpty == true
+                            ? name!
+                            : 'Ajouter votre immeuble'),
                     style: GoogleFonts.inter(
                       color: Colors.white,
                       fontSize: 15,
@@ -1377,7 +1333,10 @@ class _CondoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    location?.isNotEmpty == true ? location! : emptySubtitle,
+                    subtitleOverride ??
+                        (location?.isNotEmpty == true
+                            ? location!
+                            : 'Nom + adresse de l immeuble'),
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.60),
                       fontSize: 12,
@@ -1390,9 +1349,7 @@ class _CondoCard extends StatelessWidget {
             Text(
               actionLabel,
               style: GoogleFonts.inter(
-                color: onTap == null
-                    ? Colors.white.withValues(alpha: 0.42)
-                    : kAuthGold,
+                color: kAuthGold,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -2125,7 +2082,7 @@ class _CondoEditSheetState extends State<_CondoEditSheet> {
       context,
       MaterialPageRoute(
         builder: (_) => GoogleAddressPickerScreen(
-          title: 'Choisir l adresse du condo',
+          title: 'Choisir l adresse de l immeuble',
           apiKey: widget.apiKey,
           initialAddress: _addressController.text.trim(),
         ),
@@ -2143,11 +2100,11 @@ class _CondoEditSheetState extends State<_CondoEditSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _SheetHeader(title: 'Modifier le condo'),
+          const _SheetHeader(title: 'Modifier l immeuble'),
           const SizedBox(height: 16),
           _GoldInput(
             controller: _nameController,
-            label: 'Nom du condo',
+            label: 'Nom de l immeuble',
             icon: LucideIcons.building2,
           ),
           const SizedBox(height: 12),

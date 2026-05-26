@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -8,19 +8,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hotel_lux_os/providers/hotel_provider.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/condu_profile_screen.dart';
+import 'package:hotel_lux_os/screens/building_management_screen.dart';
 import 'package:hotel_lux_os/screens/intervenants_screen.dart';
 import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
 import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
+import 'package:hotel_lux_os/screens/manager_notifications_screen.dart';
 import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
-import 'package:hotel_lux_os/screens/villa_profile_screen.dart';
+import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
 import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
+import 'package:hotel_lux_os/services/property_scope_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
+import 'package:provider/provider.dart';
 
 const _kDashBg = Color(0xFF070707);
 const _kDashPanel = Color(0xFF090909);
@@ -35,17 +41,31 @@ class CondoDashboardScreen extends StatefulWidget {
   const CondoDashboardScreen({
     super.key,
     this.propertyType,
+    this.accessRole,
   });
 
   final String? propertyType;
+  final String? accessRole;
 
   @override
   State<CondoDashboardScreen> createState() => _CondoDashboardScreenState();
 }
 
 class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late Future<_DashboardData> _future;
   _LatLng? _deviceCoords;
+
+  String get _sessionUid =>
+      FirebaseAuth.instance.currentUser?.uid ?? AppSessionService.currentUserId;
+
+  bool get _isApartmentScopedAccess =>
+      widget.accessRole == 'apartment_account' ||
+      widget.accessRole == 'apartment_manager';
+
+  bool get _showsBuildingManagement =>
+      isBuildingPropertyType(widget.propertyType) ||
+      (widget.accessRole?.trim().isNotEmpty ?? false);
 
   @override
   void initState() {
@@ -55,11 +75,10 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
   }
 
   Future<void> _ensureInitialLocationContext() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final uid = _sessionUid;
+    if (uid.isEmpty) return;
     try {
-      final userRef =
-          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final userRef = FirebaseFirestore.instance.collection('users').doc(uid);
       final snapshot = await userRef.get();
       final data = snapshot.data() ?? const <String, dynamic>{};
       final alreadyPrompted = data['managerHomepageLocationPromptedAt'] != null;
@@ -98,20 +117,14 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
   }
 
   Future<_DashboardData> _loadData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    final uid = _sessionUid;
+    if (uid.isEmpty) {
       throw StateError('user-not-found');
     }
 
     final now = Timestamp.now();
     final results = await Future.wait([
-      FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
-      FirebaseFirestore.instance
-          .collection('hotels')
-          .where('ownerId', isEqualTo: user.uid)
-          .limit(1)
-          .get(),
-      FirebaseFirestore.instance.collection('profiles').get(),
+      FirebaseFirestore.instance.collection('users').doc(uid).get(),
       FirebaseFirestore.instance.collection('stories').get(),
       _readMapsKey(),
     ]);
@@ -119,10 +132,57 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
     final userData =
         (results[0] as DocumentSnapshot<Map<String, dynamic>>).data() ??
             const <String, dynamic>{};
-    final condoDocs = (results[1] as QuerySnapshot<Map<String, dynamic>>).docs;
-    final workerDocs = (results[2] as QuerySnapshot<Map<String, dynamic>>).docs;
-    final storyDocs = (results[3] as QuerySnapshot<Map<String, dynamic>>).docs;
-    final mapsKey = results[4] as String;
+    final storyDocs = (results[1] as QuerySnapshot<Map<String, dynamic>>).docs;
+    final mapsKey = results[2] as String;
+
+    final accountType = PropertyScopeService.normalizeAccountType(userData);
+    final assignedPropertyIds = PropertyScopeService.scopedPropertyIds(userData);
+
+    List<DocumentSnapshot<Map<String, dynamic>>> condoDocs;
+    if (accountType == 'apartment_account') {
+      condoDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+      if (assignedPropertyIds.isNotEmpty) {
+        for (final propertyId in assignedPropertyIds) {
+          final doc = await FirebaseFirestore.instance
+              .collection('hotels')
+              .doc(propertyId)
+              .get();
+          if (doc.exists) {
+            condoDocs.add(doc);
+          }
+        }
+      } else {
+        final snapshot = await FirebaseFirestore.instance
+            .collection('hotels')
+            .where('accountUid', isEqualTo: uid)
+            .limit(1)
+            .get();
+        condoDocs = snapshot.docs;
+      }
+    } else if (accountType == 'manager' ||
+        accountType == 'concierge' ||
+        accountType == 'apartment_manager') {
+      condoDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+      for (final propertyId in assignedPropertyIds) {
+        final doc = await FirebaseFirestore.instance
+            .collection('hotels')
+            .doc(propertyId)
+            .get();
+        if (doc.exists) condoDocs.add(doc);
+      }
+    } else {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('hotels')
+          .where('ownerId', isEqualTo: uid)
+          .limit(12)
+          .get();
+      condoDocs = snapshot.docs
+          .where((doc) =>
+              ((doc.data()['status'] as String?)?.trim().toLowerCase() ??
+                  'active') !=
+              'deleted')
+          .toList();
+    }
 
     final firstName = (userData['firstName'] as String?)?.trim() ?? '';
     final lastName = (userData['lastName'] as String?)?.trim() ?? '';
@@ -134,15 +194,25 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
             : 'Manager';
 
     final condoData = condoDocs.isNotEmpty
-        ? condoDocs.first.data()
+        ? (condoDocs.first.data() ?? const <String, dynamic>{})
         : const <String, dynamic>{};
     final condoName = (condoData['name'] as String?)?.trim().isNotEmpty == true
         ? (condoData['name'] as String).trim()
-        : 'Votre condo';
+        : accountType == 'concierge'
+            ? 'Appartements assignes'
+            : widget.propertyType == 'building_manager' ||
+                    widget.propertyType == 'rental_building'
+                ? 'Votre immeuble'
+            : 'Votre condo';
     final location =
         (condoData['location'] as String?)?.trim().isNotEmpty == true
             ? (condoData['location'] as String).trim()
             : 'Adresse a configurer';
+    final scopeLabel =
+        (accountType == 'apartment_account' || accountType == 'apartment_manager') &&
+                condoName.isNotEmpty
+            ? 'Appartement: $condoName'
+            : null;
 
     final managerCoords = _deviceCoords ??
         (location.isNotEmpty && location != 'Adresse a configurer'
@@ -150,9 +220,41 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
             : null);
 
     final nowDate = now.toDate();
+    final activeStoryDocs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    final ownerIds = <String>{};
+    final prefilteredDistances = <String, double?>{};
+    final groupedStories = <String, List<_StoryEntry>>{};
+    for (final doc in storyDocs) {
+      final data = doc.data();
+      if (!_isStoryStillActive(data, nowDate)) continue;
+      final ownerId = _resolveStoryOwnerId(data);
+      if (ownerId == null || ownerId.isEmpty) continue;
+      final latitude =
+          _readCoordinate(data, ['latitude', 'storyLatitude', 'lat']);
+      final longitude =
+          _readCoordinate(data, ['longitude', 'storyLongitude', 'lng', 'lon']);
+      if (managerCoords != null && latitude != null && longitude != null) {
+        final distanceKm =
+            _haversineKm(managerCoords, _LatLng(latitude, longitude));
+        if (distanceKm > 20) continue;
+        prefilteredDistances[ownerId] = distanceKm;
+      }
+      activeStoryDocs.add(doc);
+      ownerIds.add(ownerId);
+    }
+
+    final workerDocs = await Future.wait(
+      ownerIds.map(
+        (ownerId) => FirebaseFirestore.instance
+            .collection('profiles')
+            .doc(ownerId)
+            .get(),
+      ),
+    );
     final workerMap = <String, _StoryWorker>{};
     for (final doc in workerDocs) {
       final data = doc.data();
+      if (data == null || !doc.exists) continue;
       final worker = _StoryWorker(
         id: doc.id,
         name: _resolveWorkerName(data),
@@ -168,11 +270,8 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
       }
     }
 
-    final groupedStories = <String, List<_StoryEntry>>{};
-    for (final doc in storyDocs) {
-      final data = doc.data();
-      if (!_isStoryStillActive(data, nowDate)) continue;
-      final ownerId = _resolveStoryOwnerId(data);
+    for (final doc in activeStoryDocs) {
+      final ownerId = _resolveStoryOwnerId(doc.data());
       if (ownerId == null || ownerId.isEmpty) continue;
       final worker = workerMap[ownerId];
       if (worker == null) continue;
@@ -181,32 +280,38 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
       groupedStories.putIfAbsent(ownerId, () => <_StoryEntry>[]).add(entry);
     }
 
-    final storyWorkers = <_StoryWorker>[];
-    for (final entry in groupedStories.entries) {
-      final worker = workerMap[entry.key];
-      if (worker == null) continue;
-      final sortedStories = [...entry.value]
-        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    // Parallelize per-worker geocoding so GPS filtering is fast.
+    final rawEntries = groupedStories.entries.toList();
+    final resolvedWorkers = await Future.wait(
+      rawEntries.map((entry) async {
+        final worker = workerMap[entry.key];
+        if (worker == null) return null;
+        final sortedStories = [...entry.value]
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-      final storyCoords = _resolveStoryCoords(sortedStories);
-      double? distanceKm;
-      if (managerCoords != null) {
-        final comparisonCoords = storyCoords ??
-            await _resolveWorkerCoords(worker.address, apiKey: mapsKey);
-        if (comparisonCoords != null) {
-          distanceKm = _haversineKm(managerCoords, comparisonCoords);
+        final storyCoords = _resolveStoryCoords(sortedStories);
+        double? distanceKm = prefilteredDistances[entry.key];
+        if (managerCoords != null) {
+          final comparisonCoords = storyCoords ??
+              (distanceKm == null
+                  ? await _resolveWorkerCoords(worker.address, apiKey: mapsKey)
+                  : null);
+          if (distanceKm == null && comparisonCoords != null) {
+            distanceKm = _haversineKm(managerCoords, comparisonCoords);
+          }
         }
-      }
 
-      if (managerCoords != null && distanceKm != null && distanceKm > 20) {
-        continue;
-      }
+        if (managerCoords != null && distanceKm != null && distanceKm > 20) {
+          return null;
+        }
 
-      storyWorkers.add(worker.copyWith(
-        stories: sortedStories,
-        distanceKm: distanceKm,
-      ));
-    }
+        return worker.copyWith(
+          stories: sortedStories,
+          distanceKm: distanceKm,
+        );
+      }),
+    );
+    final storyWorkers = resolvedWorkers.whereType<_StoryWorker>().toList();
 
     storyWorkers.sort((a, b) {
       final aTime = a.stories.last.createdAt;
@@ -219,11 +324,23 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
 
     return _DashboardData(
       managerName: fullName.isNotEmpty ? fullName : fallbackName,
-      propertyRole: widget.propertyType == 'villa_owner'
-          ? 'Proprietaire de villa'
-          : 'Proprietaire d appartement / condo',
+      propertyRole: accountType == 'concierge'
+          ? 'Concierge'
+          : accountType == 'manager'
+              ? 'Gestionnaire immeuble'
+              : accountType == 'apartment_manager'
+                  ? 'Gestionnaire'
+                  : accountType == 'apartment_account'
+                      ? 'Compte appartement'
+                  : widget.propertyType == 'villa_owner'
+                      ? 'Proprietaire de villa'
+                      : widget.propertyType == 'building_manager'
+                          ? 'Proprietaire d immeuble'
+                          : 'Proprietaire d appartement / condo',
       condoName: condoName,
       condoLocation: location,
+      scopeLabel: scopeLabel,
+      hasApartments: condoDocs.isNotEmpty,
       stories: storyWorkers,
     );
   }
@@ -235,34 +352,64 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
     await _future;
   }
 
-  void _showSoon(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.inter(color: Colors.white),
-        ),
-        backgroundColor: _kDashCard,
-      ),
-    );
-  }
-
   void _openProfile() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => widget.propertyType == 'villa_owner'
-            ? const VillaProfileScreen()
-            : const ConduProfileScreen(),
+        builder: (_) => buildManagerProfileScreen(
+          propertyType: widget.propertyType,
+        ),
       ),
+    );
+  }
+
+  Future<void> _logout() async {
+    await Provider.of<HotelProvider>(context, listen: false).logout();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+      (_) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: _kDashBg,
       extendBody: true,
+      drawer: _ManagerDashboardDrawer(
+        propertyType: widget.propertyType,
+        accessRole: widget.accessRole,
+        onProfile: _openProfile,
+        onMessages: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ManagerMessagesScreen()),
+        ),
+        onIntervenants: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const IntervenantsScreen()),
+        ),
+        onOffers: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ManagerOffersScreen()),
+        ),
+        onPropertyManagement: () {
+          if (_showsBuildingManagement) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const BuildingManagementScreen(),
+              ),
+            );
+            return;
+          }
+          _openProfile();
+        },
+        onSettings: _openProfile,
+        onLogout: _logout,
+      ),
       bottomNavigationBar: _DashboardNav(
         currentIndex: 0,
         onTap: (index) {
@@ -315,9 +462,7 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: kAuthGold),
-            );
+            return _DashboardSkeleton(propertyType: widget.propertyType);
           }
 
           final data = snapshot.data!;
@@ -330,13 +475,14 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
               padding: EdgeInsets.zero,
               children: [
                 SizedBox(
-                  height: 320,
+                  height: 240,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       Image.asset(
                         'assets/conduheroimg.webp',
                         fit: BoxFit.cover,
+                        alignment: Alignment.topRight,
                       ),
                       Container(
                         decoration: const BoxDecoration(
@@ -360,16 +506,19 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                               children: [
                                 _HeroCircleButton(
                                   icon: LucideIcons.menu,
-                                  onTap: () => _showSoon(
-                                    'Le menu complet arrive bientot.',
-                                  ),
+                                  onTap: () =>
+                                      _scaffoldKey.currentState?.openDrawer(),
                                 ),
                                 const Spacer(),
                                 _HeroCircleButton(
                                   icon: LucideIcons.bell,
                                   badge: true,
-                                  onTap: () => _showSoon(
-                                    'Les notifications avancees arrivent bientot.',
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const ManagerNotificationsScreen(),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -379,7 +528,7 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                                 ),
                               ],
                             ),
-                            const Spacer(),
+                            const SizedBox(height: 10),
                             Text(
                               'Bonjour',
                               style: GoogleFonts.inter(
@@ -416,7 +565,7 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    data.condoName,
+                                    data.scopeLabel ?? data.condoName,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.inter(
@@ -438,6 +587,9 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                 Transform.translate(
                   offset: const Offset(0, -20),
                   child: Container(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.sizeOf(context).height - 220,
+                    ),
                     decoration: const BoxDecoration(
                       color: _kDashPanel,
                       borderRadius: BorderRadius.only(
@@ -446,10 +598,56 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 14, 0, 120),
+                      padding: EdgeInsets.fromLTRB(
+                        0, 14, 0,
+                        data.stories.isEmpty ? 16 : 100,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_showsBuildingManagement &&
+                              !_isApartmentScopedAccess) ...[
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: _BuildingManagerActionGrid(
+                                accessRole: widget.accessRole,
+                                hasApartments: data.hasApartments,
+                                onAddProperty: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const BuildingManagementScreen(
+                                        autoOpenApartmentForm: true,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onAddManager: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const BuildingManagementScreen(
+                                        pendingMemberAccountType:
+                                            'apartment_manager',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onAddConcierge: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const BuildingManagementScreen(
+                                        pendingMemberAccountType: 'concierge',
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Row(
@@ -487,7 +685,7 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                           ),
                           const SizedBox(height: 12),
                           _WorkerStoriesSection(stories: data.stories),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 12),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: _QuickActionCard(
@@ -501,6 +699,25 @@ class _CondoDashboardScreenState extends State<CondoDashboardScreen> {
                               },
                             ),
                           ),
+                          if (_showsBuildingManagement) ...[
+                            const SizedBox(height: 12),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              child: _BuildingManagerCard(
+                                accessRole: widget.accessRole,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const BuildingManagementScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -521,6 +738,8 @@ class _DashboardData {
     required this.propertyRole,
     required this.condoName,
     required this.condoLocation,
+    required this.scopeLabel,
+    required this.hasApartments,
     required this.stories,
   });
 
@@ -528,6 +747,8 @@ class _DashboardData {
   final String propertyRole;
   final String condoName;
   final String condoLocation;
+  final String? scopeLabel;
+  final bool hasApartments;
   final List<_StoryWorker> stories;
 }
 
@@ -667,6 +888,14 @@ class _StoryCardState extends State<_StoryCard> {
   void initState() {
     super.initState();
     _preparePreview();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final story in widget.worker.stories) {
+        if (!story.isVideo) {
+          precacheImage(NetworkImage(story.mediaUrl), context);
+        }
+      }
+    });
   }
 
   @override
@@ -848,25 +1077,45 @@ class _StoryCardMedia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (story.isVideo &&
-        controller != null &&
-        controller!.value.isInitialized &&
-        controller!.value.size.width > 0 &&
-        controller!.value.size.height > 0) {
-      final size = controller!.value.size;
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: size.width,
-          height: size.height,
-          child: VideoPlayer(controller!),
-        ),
+    if (story.isVideo) {
+      if (controller != null && controller!.value.isInitialized) {
+        final size = controller!.value.size;
+        if (size.width > 0 && size.height > 0) {
+          return FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: VideoPlayer(controller!),
+            ),
+          );
+        }
+        // Initialized but 0×0 (codec didn't report dimensions yet)
+        return VideoPlayer(controller!);
+      }
+      // Video not yet ready — show a dark placeholder
+      return Container(
+        color: const Color(0xFF0A0A0A),
+        alignment: Alignment.center,
+        child:
+            const Icon(LucideIcons.playCircle, color: Colors.white30, size: 28),
       );
     }
 
     return Image.network(
       story.mediaUrl,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          color: const Color(0xFF0A0A0A),
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(
+            color: Colors.white24,
+            strokeWidth: 2,
+          ),
+        );
+      },
       errorBuilder: (_, __, ___) => Container(
         color: const Color(0xFF111111),
         alignment: Alignment.center,
@@ -880,14 +1129,148 @@ class _StoryCardMedia extends StatelessWidget {
   }
 }
 
+class _DashboardSkeleton extends StatefulWidget {
+  const _DashboardSkeleton({this.propertyType});
+  final String? propertyType;
+
+  @override
+  State<_DashboardSkeleton> createState() => _DashboardSkeletonState();
+}
+
+class _DashboardSkeletonState extends State<_DashboardSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  Widget _shimmer(
+      {double width = double.infinity,
+      double height = 16,
+      double radius = 10}) {
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius),
+          color: Colors.white.withValues(alpha: 0.06 + _pulse.value * 0.08),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
+    return Scaffold(
+      backgroundColor: _kDashBg,
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          SizedBox(
+            height: 240,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  widget.propertyType == 'villa_owner'
+                      ? 'assets/conduheroimg.webp'
+                      : 'assets/conduheroimg.webp',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topRight,
+                ),
+                Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0x55000000),
+                        Color(0xAA000000),
+                        Color(0xFF070707),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, topInset + 10, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 10),
+                      _shimmer(width: 90, height: 13),
+                      const SizedBox(height: 10),
+                      _shimmer(width: 200, height: 26, radius: 12),
+                      const SizedBox(height: 8),
+                      _shimmer(width: 140, height: 16),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Transform.translate(
+            offset: const Offset(0, -20),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: _kDashPanel,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(28),
+                  topRight: Radius.circular(28),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _shimmer(width: 220, height: 16),
+                  const SizedBox(height: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Row(
+                      children: [
+                        for (int i = 0; i < 3; i++) ...[
+                          _shimmer(width: 130, height: 90, radius: 22),
+                          if (i < 2) const SizedBox(width: 12),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _shimmer(height: 100, radius: 18),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WorkerStoriesEmpty extends StatelessWidget {
   const _WorkerStoriesEmpty();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 182,
-      padding: const EdgeInsets.all(18),
+      height: 90,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(18),
@@ -927,6 +1310,313 @@ class _WorkerStoriesEmpty extends StatelessWidget {
   }
 }
 
+class _BuildingManagerCard extends StatelessWidget {
+  const _BuildingManagerCard({
+    required this.accessRole,
+    required this.onTap,
+  });
+
+  final String? accessRole;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = accessRole == 'apartment_account'
+        ? 'Gestion de votre appartement'
+        : accessRole == 'apartment_manager'
+            ? 'Gestionnaire de votre appartement'
+            : accessRole == 'concierge'
+        ? 'Vos appartements et votre equipe'
+        : accessRole == 'manager'
+            ? 'Gestion immeuble et concierges'
+            : 'Pilotage complet de l immeuble';
+    final subtitle = accessRole == 'apartment_account'
+        ? 'Retrouvez votre appartement, ses gestionnaires et ses concierges lies.'
+        : accessRole == 'apartment_manager'
+            ? 'Retrouvez l appartement auquel vous etes rattache et les comptes lies.'
+            : accessRole == 'concierge'
+        ? 'Retrouvez les appartements assignes et les membres de votre equipe.'
+        : accessRole == 'manager'
+            ? 'Ajoutez des concierges, distribuez les appartements et suivez les acces.'
+            : 'Ajoutez plusieurs appartements, des gestionnaires et des concierges depuis un seul espace.';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: _kDashBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: kAuthGold.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.building2,
+                color: kAuthGold,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withValues(alpha: 0.68),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              LucideIcons.chevronRight,
+              color: kAuthGold,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BuildingManagerActionGrid extends StatelessWidget {
+  const _BuildingManagerActionGrid({
+    required this.accessRole,
+    required this.hasApartments,
+    this.onAddProperty,
+    this.onAddManager,
+    this.onAddConcierge,
+  });
+
+  final String? accessRole;
+  final bool hasApartments;
+  final VoidCallback? onAddProperty;
+  final VoidCallback? onAddManager;
+  final VoidCallback? onAddConcierge;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOwner = accessRole == null || accessRole!.trim().isEmpty;
+    final isManager = accessRole == 'manager';
+    final items = <({IconData icon, String label, VoidCallback? onTap})>[
+      if (isOwner)
+        (
+          icon: LucideIcons.plus,
+          label: hasApartments
+              ? 'Ajouter un autre appartement'
+              : 'Ajouter un appartement',
+          onTap: onAddProperty,
+        ),
+      if (isOwner)
+        (
+          icon: LucideIcons.userPlus,
+          label: 'Ajouter gestionnaire',
+          onTap: onAddManager,
+        ),
+      if (isOwner || isManager)
+        (
+          icon: LucideIcons.key,
+          label: 'Ajouter concierge',
+          onTap: onAddConcierge,
+        ),
+    ].where((item) => item.onTap != null).toList();
+
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (int index = 0; index < items.length; index++) ...[
+            _BuildingActionChip(item: items[index]),
+            if (index < items.length - 1) const SizedBox(width: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BuildingActionChip extends StatelessWidget {
+  const _BuildingActionChip({
+    required this.item,
+  });
+
+  final ({IconData icon, String label, VoidCallback? onTap}) item;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: item.onTap,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 176),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _kDashBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(item.icon, color: kAuthGold, size: 18),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ManagerDashboardDrawer extends StatelessWidget {
+  const _ManagerDashboardDrawer({
+    required this.propertyType,
+    required this.accessRole,
+    required this.onProfile,
+    required this.onMessages,
+    required this.onIntervenants,
+    required this.onOffers,
+    required this.onPropertyManagement,
+    required this.onSettings,
+    required this.onLogout,
+  });
+
+  final String? propertyType;
+  final String? accessRole;
+  final VoidCallback onProfile;
+  final VoidCallback onMessages;
+  final VoidCallback onIntervenants;
+  final VoidCallback onOffers;
+  final VoidCallback onPropertyManagement;
+  final VoidCallback onSettings;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBuilding = isBuildingPropertyType(propertyType) ||
+        (accessRole?.trim().isNotEmpty ?? false);
+    final propertyLabel = isBuilding ? 'Gestion immeuble' : 'Gestion condo';
+
+    Widget item({
+      required IconData icon,
+      required String label,
+      required VoidCallback onTap,
+    }) {
+      return ListTile(
+        leading: Icon(icon, color: kAuthGold, size: 20),
+        title: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(context);
+          onTap();
+        },
+      );
+    }
+
+    return Drawer(
+      backgroundColor: const Color(0xFF0D0D0D),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+              child: Text(
+                'StayFix',
+                style: GoogleFonts.cormorantGaramond(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Divider(color: _kDashBorder, height: 1),
+            item(
+              icon: LucideIcons.user,
+              label: 'Profile',
+              onTap: onProfile,
+            ),
+            item(
+              icon: LucideIcons.messageCircle,
+              label: 'Messages',
+              onTap: onMessages,
+            ),
+            item(
+              icon: LucideIcons.users,
+              label: 'Intervenants',
+              onTap: onIntervenants,
+            ),
+            item(
+              icon: LucideIcons.clipboardList,
+              label: 'Offres',
+              onTap: onOffers,
+            ),
+            item(
+              icon: LucideIcons.building2,
+              label: propertyLabel,
+              onTap: onPropertyManagement,
+            ),
+            item(
+              icon: LucideIcons.settings,
+              label: 'Parametres',
+              onTap: onSettings,
+            ),
+            const Spacer(),
+            const Divider(color: _kDashBorder, height: 1),
+            item(
+              icon: LucideIcons.logOut,
+              label: 'Deconnexion',
+              onTap: onLogout,
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _StoryViewerScreen extends StatefulWidget {
   const _StoryViewerScreen({
     required this.worker,
@@ -943,6 +1633,8 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
   late final AnimationController _progressController;
   VideoPlayerController? _videoController;
   int _currentIndex = 0;
+  int _storyLoadVersion = 0;
+  bool _initializingImage = false;
   bool _initializingVideo = false;
 
   _StoryEntry get _currentStory => widget.worker.stories[_currentIndex];
@@ -957,6 +1649,14 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
         }
       });
     _startCurrentStory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (final story in widget.worker.stories) {
+        if (!story.isVideo) {
+          precacheImage(NetworkImage(story.mediaUrl), context);
+        }
+      }
+    });
   }
 
   @override
@@ -967,6 +1667,7 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
   }
 
   Future<void> _startCurrentStory() async {
+    final loadVersion = ++_storyLoadVersion;
     _progressController.stop();
     _progressController.value = 0;
     final previousController = _videoController;
@@ -978,18 +1679,32 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
 
     final story = _currentStory;
     if (!story.isVideo) {
+      if (mounted) {
+        setState(() => _initializingImage = true);
+      }
+      final imageLoaded = await _precacheStoryImage(story.mediaUrl);
+      if (!mounted || loadVersion != _storyLoadVersion) return;
+      setState(() => _initializingImage = false);
       final duration = Duration(milliseconds: story.durationMs ?? 5000);
-      _progressController.duration = duration;
+      _progressController.duration =
+          imageLoaded ? duration : const Duration(seconds: 6);
       unawaited(_progressController.forward(from: 0));
       if (mounted) setState(() {});
       return;
     }
 
-    setState(() => _initializingVideo = true);
+    setState(() {
+      _initializingImage = false;
+      _initializingVideo = true;
+    });
     final controller =
         VideoPlayerController.networkUrl(Uri.parse(story.mediaUrl));
     try {
       await controller.initialize();
+      if (!mounted || loadVersion != _storyLoadVersion) {
+        await controller.dispose();
+        return;
+      }
       await controller.setLooping(false);
       await controller.setVolume(1);
       await controller.play();
@@ -1002,12 +1717,22 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
       unawaited(_progressController.forward(from: 0));
     } catch (_) {
       await controller.dispose();
+      if (!mounted || loadVersion != _storyLoadVersion) return;
       _progressController.duration = const Duration(seconds: 6);
       unawaited(_progressController.forward(from: 0));
     } finally {
-      if (mounted) {
+      if (mounted && loadVersion == _storyLoadVersion) {
         setState(() => _initializingVideo = false);
       }
+    }
+  }
+
+  Future<bool> _precacheStoryImage(String mediaUrl) async {
+    try {
+      await precacheImage(NetworkImage(mediaUrl), context);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -1133,6 +1858,17 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
           children: [
             Positioned.fill(
                 child: _StoryMedia(story: story, controller: _videoController)),
+            if (_initializingImage || _initializingVideo)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x66000000),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -1286,10 +2022,6 @@ class _StoryViewerScreenState extends State<_StoryViewerScreen>
                 ),
               ),
             ),
-            if (_initializingVideo)
-              const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
           ],
         ),
       ),
@@ -1308,25 +2040,40 @@ class _StoryMedia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (story.isVideo &&
-        controller != null &&
-        controller!.value.isInitialized &&
-        controller!.value.size.width > 0 &&
-        controller!.value.size.height > 0) {
-      final size = controller!.value.size;
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: size.width,
-          height: size.height,
-          child: VideoPlayer(controller!),
-        ),
-      );
+    if (story.isVideo) {
+      if (controller != null && controller!.value.isInitialized) {
+        final size = controller!.value.size;
+        if (size.width > 0 && size.height > 0) {
+          return FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: VideoPlayer(controller!),
+            ),
+          );
+        }
+        // Initialized but no reported dimensions — fill the screen directly
+        return VideoPlayer(controller!);
+      }
+      // Not yet initialized — black background while _initializingVideo shows spinner
+      return const ColoredBox(color: Colors.black);
     }
 
     return Image.network(
       story.mediaUrl,
       fit: BoxFit.cover,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Container(
+          color: Colors.black,
+          alignment: Alignment.center,
+          child: const CircularProgressIndicator(
+            color: Colors.white54,
+            strokeWidth: 2,
+          ),
+        );
+      },
       errorBuilder: (_, __, ___) => Container(
         color: const Color(0xFF111111),
         alignment: Alignment.center,
@@ -1513,17 +2260,13 @@ class _HeroCircleButton extends StatelessWidget {
           ),
         ),
         if (badge)
-          Positioned(
+          const Positioned(
             top: 5,
             right: 6,
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFF6B35),
-                shape: BoxShape.circle,
-                border: Border.all(color: _kDashBg, width: 1),
-              ),
+            child: UnreadMessagesDot(
+              size: 9,
+              color: Color(0xFFFF6B35),
+              borderColor: _kDashBg,
             ),
           ),
       ],
@@ -1573,25 +2316,41 @@ class _DashboardNav extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        item.icon,
-                        size: 20,
-                        color: active
-                            ? kAuthGold
-                            : Colors.white.withValues(alpha: 0.52),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item.label,
-                        style: GoogleFonts.inter(
+                      if (item.label == 'Messages')
+                        UnreadMessagesNavItem(
+                          isActive: active,
+                          onTap: () => onTap(index),
+                          activeColor: kAuthGold,
+                          inactiveColor: Colors.white.withValues(alpha: 0.52),
+                          dotColor: const Color(0xFFFF3B30),
+                          activeSize: 20,
+                          inactiveSize: 20,
+                          padding: EdgeInsets.zero,
+                          fontSize: 11,
+                          activeFontWeight: FontWeight.w700,
+                          inactiveFontWeight: FontWeight.w500,
+                        )
+                      else ...[
+                        Icon(
+                          item.icon,
+                          size: 20,
                           color: active
                               ? kAuthGold
                               : Colors.white.withValues(alpha: 0.52),
-                          fontSize: 11,
-                          fontWeight:
-                              active ? FontWeight.w700 : FontWeight.w500,
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.label,
+                          style: GoogleFonts.inter(
+                            color: active
+                                ? kAuthGold
+                                : Colors.white.withValues(alpha: 0.52),
+                            fontSize: 11,
+                            fontWeight:
+                                active ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -1753,14 +2512,31 @@ String _resolveWorkerName(Map<String, dynamic> data) {
 }
 
 String _resolveWorkerSpecialty(Map<String, dynamic> data) {
-  for (final key in [
-    'specialty',
-    'speciality',
-    'department',
-    'role',
-    'jobTitle',
-    'maintenanceType',
-  ]) {
+  final department = ((data['department'] as String?) ?? '').trim();
+  final specialty = ((data['specialty'] as String?) ?? '').trim();
+  final speciality = ((data['speciality'] as String?) ?? '').trim();
+  final specialtiesArray = (data['specialties'] as List?)
+      ?.whereType<String>()
+      .where((s) => s.trim().isNotEmpty)
+      .toList() ??
+      const <String>[];
+  final resolvedSpecialty = specialty.isNotEmpty
+      ? specialty
+      : speciality.isNotEmpty
+          ? speciality
+          : specialtiesArray.isNotEmpty
+              ? specialtiesArray.first
+              : null;
+
+  final normalizedDept = department.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+  final isQualifiedLabor = normalizedDept.contains('maindoeuvrequalifiee') ||
+      normalizedDept.contains('mainoeuvrequalifiee');
+
+  if (isQualifiedLabor && resolvedSpecialty != null) return resolvedSpecialty;
+  if (department.isNotEmpty) return department;
+  if (resolvedSpecialty != null) return resolvedSpecialty;
+
+  for (final key in ['role', 'jobTitle', 'maintenanceType']) {
     final value = (data[key] as String?)?.trim();
     if (value != null && value.isNotEmpty) return value;
   }

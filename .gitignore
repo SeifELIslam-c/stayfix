@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+node_modules/
 
 # Symbolication related
 app.*.symbols
@@ -52,3 +53,13 @@ app.*.map.json
 # Firebase service account keys
 *firebase-adminsdk*.json
 assets/hotel-project-fa6f3-firebase-adminsdk-fbsvc-1f7f7b0e69.json
+
+# Android build artifacts
+android/build/
+
+# Local debug/test files
+curl_body.txt
+curl_headers.txt
+
+# Claude Code local config
+.claude/

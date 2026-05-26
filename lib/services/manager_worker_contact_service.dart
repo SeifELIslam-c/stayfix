@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 
 class WorkerBlockedException implements Exception {
@@ -33,34 +34,38 @@ class ManagerWorkerConversationHandle {
 class ManagerWorkerContactService {
   ManagerWorkerContactService._();
 
+  static String get _currentUid =>
+      FirebaseAuth.instance.currentUser?.uid ??
+      AppSessionService.currentUserId;
+
   static Future<bool> isBlocked({
     required String workerId,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return false;
+    final uid = _currentUid;
+    if (uid.isEmpty) return false;
     final conversation = await _findExistingConversation(
-      managerUid: user.uid,
+      managerUid: uid,
       workerId: workerId,
     );
     if (conversation == null) return false;
     final blockedBy = ((conversation.data()?['blockedBy'] as List?) ?? const [])
         .map((e) => '$e')
         .toList();
-    return blockedBy.contains(user.uid);
+    return blockedBy.contains(uid);
   }
 
   static Future<void> unblockWorker({
     required String workerId,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final uid = _currentUid;
+    if (uid.isEmpty) return;
     final conversation = await _findExistingConversation(
-      managerUid: user.uid,
+      managerUid: uid,
       workerId: workerId,
     );
     if (conversation == null) return;
     await conversation.reference.set({
-      'blockedBy': FieldValue.arrayRemove([user.uid]),
+      'blockedBy': FieldValue.arrayRemove([uid]),
     }, SetOptions(merge: true));
   }
 
@@ -74,8 +79,8 @@ class ManagerWorkerContactService {
     String? workerPhone,
     bool sendSelectionMessage = false,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    final uid = _currentUid;
+    if (uid.isEmpty) {
       throw StateError('User must be signed in to contact a worker.');
     }
 
@@ -99,10 +104,10 @@ class ManagerWorkerContactService {
         <String?>[workerPhone, (profile['phone'] as String?)?.trim()]);
     final resolvedAvailable = isWorkerAvailable ??
         profile['isAvailable'] == true || profile['availableNow'] == true;
-    final managerIdentity = await _loadManagerIdentity(user.uid);
+    final managerIdentity = await _loadManagerIdentity(uid);
 
     final conversationRef = await _findOrCreateConversation(
-      managerUid: user.uid,
+      managerUid: uid,
       workerId: workerId,
       title: resolvedName.isNotEmpty ? resolvedName : 'Intervenant',
       subtitle: resolvedRole,
@@ -113,7 +118,7 @@ class ManagerWorkerContactService {
                 const [])
             .map((e) => '$e')
             .toList();
-    if (blockedBy.contains(user.uid)) {
+    if (blockedBy.contains(uid)) {
       throw WorkerBlockedException(conversationRef.id);
     }
 
@@ -128,7 +133,7 @@ class ManagerWorkerContactService {
       'subtitle': resolvedRole,
       'photoUrl': resolvedPhotoUrl,
       'workerId': workerId,
-      'managerId': user.uid,
+      'managerId': uid,
       'workerDisplayName':
           resolvedName.isNotEmpty ? resolvedName : 'Intervenant',
       'workerSubtitle': resolvedRole,
@@ -194,6 +199,10 @@ class ManagerWorkerContactService {
       'lastMessage': '',
       'lastMessageAt': FieldValue.serverTimestamp(),
       'unreadBy': <String, int>{managerUid: 0, workerId: 0},
+      'lastReadAt': <String, dynamic>{
+        managerUid: FieldValue.serverTimestamp(),
+        workerId: FieldValue.serverTimestamp(),
+      },
       'createdAt': FieldValue.serverTimestamp(),
       'createdBy': managerUid,
       'isActive': true,
@@ -310,6 +319,18 @@ class ManagerWorkerContactService {
     return 'Intervenant';
   }
 
+  static bool _isQualifiedLaborDepartment(String? department) {
+    final normalized = (department ?? '')
+        .toLowerCase()
+        .replaceAll('œ', 'oe')
+        .replaceAll('é', 'e')
+        .replaceAll('è', 'e')
+        .replaceAll('ê', 'e')
+        .replaceAll(RegExp(r'[^a-z]'), '');
+    return normalized.contains('maindoeuvrequalifiee') ||
+        normalized.contains('mainoeuvrequalifiee');
+  }
+
   static String _resolveWorkerRole(
     Map<String, dynamic> profile, {
     String? workerRole,
@@ -325,6 +346,31 @@ class ManagerWorkerContactService {
       workerDepartment,
       (profile['department'] as String?)?.trim(),
     ]);
+
+    if (_isQualifiedLaborDepartment(department)) {
+      // Show specialty directly — never prefix with the department label
+      String? specialty = _resolveFirstNonEmpty(<String?>[
+        (profile['specialty'] as String?)?.trim(),
+        (profile['speciality'] as String?)?.trim(),
+      ]);
+      if (specialty == null) {
+        final list = profile['specialties'];
+        if (list is List) {
+          for (final item in list) {
+            final v = item?.toString().trim() ?? '';
+            if (v.isNotEmpty) {
+              specialty = v;
+              break;
+            }
+          }
+        }
+      }
+      final candidate = specialty ?? role;
+      if (candidate != null && !_isQualifiedLaborDepartment(candidate)) {
+        return candidate;
+      }
+      return role ?? department ?? '';
+    }
 
     if (role != null && department != null && role != department) {
       return '$department - $role';

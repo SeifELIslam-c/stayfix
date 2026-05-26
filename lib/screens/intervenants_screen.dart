@@ -10,14 +10,16 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
-import 'package:hotel_lux_os/screens/condu_profile_screen.dart';
 import 'package:hotel_lux_os/screens/intervenant_profile_screen.dart';
 import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
 import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
+import 'package:hotel_lux_os/screens/manager_notifications_screen.dart';
 import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
-import 'package:hotel_lux_os/screens/villa_profile_screen.dart';
+import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
 import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
+import 'package:hotel_lux_os/services/property_scope_service.dart';
+import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // ── Google Maps API key ───────────────────────────────────────────────────────
@@ -31,12 +33,9 @@ const kWhite40 = Color(0x66FFFFFF);
 const kOrangeDot = Color(0xFFFF6B35);
 const kGreenDot = Color(0xFF22C55E);
 const List<String> _kAllWorkerDepartments = <String>[
+  'Propose au menage',
   'Maintenance generale',
   'Main-d\'oeuvre qualifiee',
-  'Prepose aux chambres',
-  'Houseman',
-  'Concierge',
-  'Menage',
 ];
 final Map<String, _LatLng?> _geocodeCache = <String, _LatLng?>{};
 
@@ -114,7 +113,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
   // ── Data state (unchanged) ──
   final WorkerSortBy _sortBy = WorkerSortBy.relevance;
   WorkerFilterState _filters = const WorkerFilterState();
-  int _refreshSeed = 0;
+  Future<_WorkersPageData>? _workersFuture;
 
   // ── New UI state ──
   String? _selectedDepartment;
@@ -125,12 +124,47 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
   bool _isResolvingManagerAddress = false;
   bool _hasCompletedInitialLocationAttempt = false;
 
+  String get _activeUid =>
+      FirebaseAuth.instance.currentUser?.uid ?? AppSessionService.currentUserId;
+
   @override
   void initState() {
     super.initState();
+    _restoreAvailabilityPreference();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncManagerCurrentAddress();
     });
+  }
+
+  Future<void> _restoreAvailabilityPreference() async {
+    final uid = _activeUid;
+    if (uid.isEmpty) return;
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final data = snapshot.data() ?? const <String, dynamic>{};
+      final value = ((data['managerPreferences'] as Map?)?['intervenants']
+          as Map?)?['availableTodayOnly'];
+      if (value is bool && mounted) {
+        setState(() {
+          _filters = _filters.copyWith(availableNow: value);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _persistAvailabilityPreference(bool value) async {
+    final uid = _activeUid;
+    if (uid.isEmpty) return;
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'managerPreferences': {
+          'intervenants': {
+            'availableTodayOnly': value,
+          },
+        },
+      }, SetOptions(merge: true));
+    } catch (_) {}
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -139,19 +173,47 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
 
   Future<_WorkersPageData> _loadData(String uid) async {
     final mapsKey = await _readMapsKey();
-    final propertySnapshot = await FirebaseFirestore.instance
-        .collection('hotels')
-        .where('ownerId', isEqualTo: uid)
-        .limit(1)
-        .get();
+    final userSnapshot =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    final userData = userSnapshot.data() ?? const <String, dynamic>{};
+    final accountType =
+        (userData['accountType'] as String?)?.trim().toLowerCase();
+    final assignedPropertyIds = PropertyScopeService.scopedPropertyIds(userData);
+
+    final List<DocumentSnapshot<Map<String, dynamic>>> propertyDocs;
+    if (accountType == 'manager' || accountType == 'concierge') {
+      propertyDocs = <DocumentSnapshot<Map<String, dynamic>>>[];
+      for (final propertyId in assignedPropertyIds) {
+        final doc = await FirebaseFirestore.instance
+            .collection('hotels')
+            .doc(propertyId)
+            .get();
+        if (doc.exists) {
+          propertyDocs.add(doc);
+        }
+      }
+    } else {
+      final propertySnapshot = await FirebaseFirestore.instance
+          .collection('hotels')
+          .where('ownerId', isEqualTo: uid)
+          .limit(12)
+          .get();
+      propertyDocs = propertySnapshot.docs;
+    }
 
     _PropertyInfo? property;
     _LatLng? managerCoords;
     List<_WorkerItem> workers = const [];
 
-    if (propertySnapshot.docs.isNotEmpty) {
-      final propertyDoc = propertySnapshot.docs.first;
-      final propertyData = propertyDoc.data();
+    if (propertyDocs.isNotEmpty) {
+      var propertyDoc = propertyDocs.first;
+      for (final doc in propertyDocs) {
+        if ((doc.data()?['location'] as String?)?.trim().isNotEmpty ?? false) {
+          propertyDoc = doc;
+          break;
+        }
+      }
+      final propertyData = propertyDoc.data() ?? const <String, dynamic>{};
       property = _PropertyInfo(
         id: propertyDoc.id,
         name: (propertyData['name'] as String?)?.trim(),
@@ -187,7 +249,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
         await FirebaseFirestore.instance.collection('profiles').get();
 
     final resolved = await Future.wait(
-      workerSnapshot.docs.map((doc) async {
+      workerSnapshot.docs
+          .where((doc) => _isStayFixJobWorkerProfile(doc.data()))
+          .map((doc) async {
         double? distanceKm;
         if (managerCoords != null) {
           final addr = (_resolveWorkerAddress(doc.data()) ?? '').trim();
@@ -201,8 +265,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
         return _workerFromDoc(doc, distanceKm: distanceKm);
       }),
     );
-    workers =
-        resolved.where((worker) => worker.fullName.trim().isNotEmpty).toList();
+    workers = resolved
+        .where((worker) => worker.fullName.trim().isNotEmpty)
+        .toList();
 
     final departments = _buildDepartmentOptions(workers);
     final filteredWorkers = _applyFiltersAndSort(workers, _filters, _sortBy);
@@ -224,7 +289,11 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
 
   Future<void> _refresh() async {
     if (!mounted) return;
-    setState(() => _refreshSeed++);
+    final uid = _activeUid;
+    if (uid.isEmpty) return;
+    setState(() {
+      _workersFuture = _loadData(uid);
+    });
   }
 
   void _showSoonMessage(String message) {
@@ -253,7 +322,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
         workerId: worker.id,
         workerName: worker.fullName,
         workerRole: worker.role,
-        workerDepartment: worker.department,
+        workerDepartment: worker.displayHeadline,
         workerPhotoBase64: worker.photoBase64,
         isWorkerAvailable: worker.isAvailableNow,
         sendSelectionMessage: sendSelectionMessage,
@@ -328,19 +397,20 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
   }
 
   Future<void> _openProfileScreen() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || !mounted) return;
+    final uid = _activeUid;
+    if (uid.isEmpty || !mounted) return;
     final doc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
     if (!mounted) return;
     final propertyType =
         (doc.data()?['propertyProfileType'] as String?)?.trim() ?? '';
-    final screen = propertyType == 'villa_owner'
-        ? const VillaProfileScreen()
-        : const ConduProfileScreen();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => screen),
+      MaterialPageRoute(
+        builder: (_) => buildManagerProfileScreen(
+          propertyType: propertyType,
+        ),
+      ),
     );
   }
 
@@ -387,7 +457,10 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
           _managerCoordsOverride =
               _LatLng(lastKnown.latitude, lastKnown.longitude);
           _managerAddressOverride ??= 'Position actuelle detectee';
-          _refreshSeed++;
+          final uid = _activeUid;
+          if (uid.isNotEmpty) {
+            _workersFuture = _loadData(uid);
+          }
         });
       }
 
@@ -433,7 +506,10 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
         );
         _managerAddressOverride = exactAddress ??
             '${resolvedPosition.latitude.toStringAsFixed(6)}, ${resolvedPosition.longitude.toStringAsFixed(6)}';
-        _refreshSeed++;
+        final uid = _activeUid;
+        if (uid.isNotEmpty) {
+          _workersFuture = _loadData(uid);
+        }
       });
     } catch (error, stackTrace) {
       developer.log(
@@ -457,7 +533,10 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
         setState(() {
           _isResolvingManagerAddress = false;
           _hasCompletedInitialLocationAttempt = true;
-          _refreshSeed++;
+          final uid = _activeUid;
+          if (uid.isNotEmpty) {
+            _workersFuture ??= _loadData(uid);
+          }
         });
       }
     }
@@ -492,8 +571,8 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) return const AuthScreen();
+    final activeUid = _activeUid;
+    if (activeUid.isEmpty) return const AuthScreen();
 
     final mq = MediaQuery.of(context);
     final heroHeight = (mq.size.height * 0.30).clamp(200.0, 260.0);
@@ -502,8 +581,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
       backgroundColor: const Color(0xFF0A0A0A),
       bottomNavigationBar: _buildBottomNavBar(),
       body: FutureBuilder<_WorkersPageData>(
-        key: ValueKey(_refreshSeed),
-        future: _loadData(firebaseUser.uid),
+        future: _workersFuture ??= _loadData(activeUid),
         builder: (context, snapshot) {
           final data = snapshot.data;
           final isLoading = snapshot.connectionState != ConnectionState.done ||
@@ -555,8 +633,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
                                   onTap: () => Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          const CondoDashboardScreen(),
+                                      builder: (_) => buildManagerHomeScreen(),
                                     ),
                                   ),
                                 ),
@@ -567,8 +644,13 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
                                   children: [
                                     _HeroRoundButton(
                                       icon: LucideIcons.bell,
-                                      onTap: () => _showSoonMessage(
-                                          'Aucune notification pour le moment.'),
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const ManagerNotificationsScreen(),
+                                        ),
+                                      ),
                                     ),
                                     Positioned(
                                       top: 5,
@@ -893,13 +975,13 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
                     switchTheme: SwitchThemeData(
                       trackColor: WidgetStateProperty.resolveWith((states) {
                         if (states.contains(WidgetState.selected)) {
-                          return kAuthGold.withValues(alpha: 0.45);
+                          return kGreenDot.withValues(alpha: 0.45);
                         }
                         return const Color(0xFF3A3A3A);
                       }),
                       thumbColor: WidgetStateProperty.resolveWith((states) {
                         if (states.contains(WidgetState.selected)) {
-                          return kAuthGold;
+                          return kGreenDot;
                         }
                         return const Color(0xFF888888);
                       }),
@@ -907,8 +989,14 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
                   ),
                   child: Switch(
                     value: _filters.availableNow,
-                    onChanged: (v) => setState(
-                        () => _filters = _filters.copyWith(availableNow: v)),
+                    activeTrackColor: const Color(0xFF22C55E),
+                    activeThumbColor: Colors.white,
+                    onChanged: (v) {
+                      setState(
+                        () => _filters = _filters.copyWith(availableNow: v),
+                      );
+                      _persistAvailabilityPreference(v);
+                    },
                   ),
                 ),
               ),
@@ -1007,7 +1095,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
               isActive: false,
               onTap: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const CondoDashboardScreen()),
+                MaterialPageRoute(builder: (_) => buildManagerHomeScreen()),
               ),
             ),
             const _NavItem(
@@ -1024,15 +1112,17 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
                 MaterialPageRoute(builder: (_) => const ManagerOffersScreen()),
               ),
             ),
-            _NavItem(
-              icon: LucideIcons.messageCircle,
-              label: 'Messages',
+            UnreadMessagesNavItem(
               isActive: false,
               onTap: () => Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => const ManagerMessagesScreen()),
+                  builder: (_) => const ManagerMessagesScreen(),
+                ),
               ),
+              activeColor: kAuthGold,
+              inactiveColor: Colors.white.withValues(alpha: 0.65),
+              dotColor: const Color(0xFFFF3B30),
             ),
             _NavItem(
               icon: LucideIcons.user,
@@ -1069,6 +1159,16 @@ _WorkerItem _workerFromDoc(
   final profileImageUrl = _resolveWorkerProfileImage(data);
   final specialty = ((data['specialty'] as String?) ?? '').trim();
   final speciality = ((data['speciality'] as String?) ?? '').trim();
+  final specialtyFromList = () {
+    final list = data['specialties'];
+    if (list is List) {
+      for (final item in list) {
+        final v = item?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+      }
+    }
+    return '';
+  }();
   final rating = (data['rating'] as num?)?.toDouble();
   final experience = (data['experienceYears'] as num?)?.toDouble();
   final verified = data['verified'] == true || data['isVerified'] == true;
@@ -1099,8 +1199,8 @@ _WorkerItem _workerFromDoc(
   final resolvedSpecialty = _resolveWorkerSpecialty(
     specialty: specialty,
     speciality: speciality,
+    specialtyFromList: specialtyFromList,
     maintenanceType: maintenanceType,
-    role: resolvedRole,
   );
   final resolvedDepartment = _resolveWorkerDepartment(
     department: department,
@@ -1131,6 +1231,37 @@ _WorkerItem _workerFromDoc(
     address: address.isNotEmpty ? address : null,
     distanceKm: distanceKm,
   );
+}
+
+bool _isStayFixJobWorkerProfile(Map<String, dynamic> data) {
+  final status = (data['status'] as String?)?.trim().toLowerCase() ?? '';
+  if (status == 'deleted' || status == 'disabled' || status == 'archived') {
+    return false;
+  }
+
+  final appAccess = (data['appAccess'] as String?)?.trim().toLowerCase();
+  if (appAccess == 'stayfix_job') {
+    return true;
+  }
+
+  final accountType = (data['accountType'] as String?)?.trim().toLowerCase();
+  if (accountType == 'worker' || accountType == 'concierge') {
+    return true;
+  }
+
+  final department = (data['department'] as String?)?.trim() ?? '';
+  final role = (data['role'] as String?)?.trim().toLowerCase() ?? '';
+  final specialties = data['specialties'];
+  if (department.isNotEmpty) {
+    return true;
+  }
+  if (specialties is List && specialties.isNotEmpty) {
+    return true;
+  }
+  return role.isNotEmpty &&
+      !role.contains('manager') &&
+      !role.contains('gestionnaire') &&
+      !role.contains('director');
 }
 
 String? _resolveWorkerProfileImage(Map<String, dynamic> data) {
@@ -1204,14 +1335,28 @@ List<String> _buildDepartmentOptions(List<_WorkerItem> workers) {
         .whereType<String>()
         .where((item) => item.isNotEmpty)
   }.toList()
-    ..sort();
+    ..sort((a, b) {
+      const priority = <String, int>{
+        'Propose au menage': 0,
+        'Maintenance generale': 1,
+        "Main-d'oeuvre qualifiee": 2,
+      };
+      final orderA = priority[a] ?? 99;
+      final orderB = priority[b] ?? 99;
+      if (orderA != orderB) {
+        return orderA.compareTo(orderB);
+      }
+      return a.compareTo(b);
+    });
   return options;
 }
 
 List<String> _buildRoleOptions(List<_WorkerItem> workers, String? department) {
   final scoped = department == null
       ? workers
-      : workers.where((worker) => worker.department == department);
+      : workers.where(
+          (worker) => _matchesWorkerDepartment(worker, department),
+        );
   final options = scoped
       .map((worker) => worker.role)
       .where((item) => item.isNotEmpty)
@@ -1222,8 +1367,11 @@ List<String> _buildRoleOptions(List<_WorkerItem> workers, String? department) {
 }
 
 List<String> _buildSpecialtyOptions(List<_WorkerItem> workers, String? role) {
-  final scoped =
-      role == null ? workers : workers.where((worker) => worker.role == role);
+  final scoped = role == null
+      ? workers
+      : workers.where(
+          (worker) => _matchesNormalizedValue(worker.role, role),
+        );
   final options = scoped
       .map((worker) => worker.specialty)
       .whereType<String>()
@@ -1243,13 +1391,16 @@ List<_WorkerItem> _applyFiltersAndSort(
     if (worker.distanceKm == null) {
       return false;
     }
-    if (filters.department != null && worker.department != filters.department) {
+    if (filters.department != null &&
+        !_matchesWorkerDepartment(worker, filters.department!)) {
       return false;
     }
-    if (filters.role != null && worker.role != filters.role) {
+    if (filters.role != null &&
+        !_matchesNormalizedValue(worker.role, filters.role!)) {
       return false;
     }
-    if (filters.specialty != null && worker.specialty != filters.specialty) {
+    if (filters.specialty != null &&
+        !_matchesNormalizedValue(worker.specialty, filters.specialty!)) {
       return false;
     }
     if (filters.availableNow && !worker.isAvailableNow) {
@@ -1615,14 +1766,52 @@ String _resolveWorkerRole({
 String? _resolveWorkerSpecialty({
   required String specialty,
   required String speciality,
+  required String specialtyFromList,
   required String maintenanceType,
-  required String role,
 }) {
   if (specialty.isNotEmpty) return specialty;
   if (speciality.isNotEmpty) return speciality;
+  if (specialtyFromList.isNotEmpty) return specialtyFromList;
   if (maintenanceType.isNotEmpty) return maintenanceType;
-  if (role.isNotEmpty && role != 'Intervenant') return role;
   return null;
+}
+
+String _normalizeWorkerFilterValue(String? value) {
+  return (value ?? '')
+      .trim()
+      .toLowerCase()
+      .replaceAll('œ', 'oe')
+      .replaceAll('é', 'e')
+      .replaceAll('è', 'e')
+      .replaceAll('ê', 'e')
+      .replaceAll('ë', 'e')
+      .replaceAll('à', 'a')
+      .replaceAll('â', 'a')
+      .replaceAll('ä', 'a')
+      .replaceAll('î', 'i')
+      .replaceAll('ï', 'i')
+      .replaceAll('ô', 'o')
+      .replaceAll('ö', 'o')
+      .replaceAll('ù', 'u')
+      .replaceAll('û', 'u')
+      .replaceAll('ü', 'u')
+      .replaceAll('ç', 'c')
+      .replaceAll(RegExp(r'[^a-z0-9]'), '');
+}
+
+bool _matchesNormalizedValue(String? left, String? right) {
+  final normalizedLeft = _normalizeWorkerFilterValue(left);
+  final normalizedRight = _normalizeWorkerFilterValue(right);
+  return normalizedLeft.isNotEmpty &&
+      normalizedRight.isNotEmpty &&
+      normalizedLeft == normalizedRight;
+}
+
+bool _matchesWorkerDepartment(_WorkerItem worker, String departmentFilter) {
+  if (_matchesNormalizedValue(worker.department, departmentFilter)) {
+    return true;
+  }
+  return _matchesNormalizedValue(worker.specialty, departmentFilter);
 }
 
 String _resolveWorkerDepartment({
@@ -1638,8 +1827,8 @@ String _resolveWorkerDepartment({
   if (role.contains('Reception') || role.contains('Concierge')) {
     return 'Concierge';
   }
-  if (role.contains('Superviseur')) return 'Main-d’œuvre qualifiée';
-  if (role.contains('Staff')) return 'Main-d’œuvre qualifiée';
+  if (role.contains('Superviseur')) return "Main-d'œuvre qualifiée";
+  if (role.contains('Staff')) return "Main-d'œuvre qualifiée";
   return 'Préposé aux chambres';
 }
 
@@ -1647,10 +1836,12 @@ bool _isQualifiedLaborDepartment(String? department) {
   final normalized = (department ?? '')
       .toLowerCase()
       .replaceAll('œ', 'oe')
-      .replaceAll('’', '\'')
-      .replaceAll(RegExp("[^a-z'-]"), '');
-  return normalized.contains('main-doeuvrequalifiee') ||
-      normalized.contains('maindoeuvrequalifiee');
+      .replaceAll('é', 'e')
+      .replaceAll('è', 'e')
+      .replaceAll('ê', 'e')
+      .replaceAll(RegExp(r'[^a-z]'), '');
+  return normalized.contains('maindoeuvrequalifiee') ||
+      normalized.contains('mainoeuvrequalifiee');
 }
 
 String _resolveWorkerDisplayHeadline({
@@ -2210,7 +2401,7 @@ class _CompactWorkerCard extends StatelessWidget {
                 Icon(
                   isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronRight,
                   color: kAuthGold.withValues(alpha: 0.80),
-                  size: 18,
+                  size: 20,
                 ),
               ],
             ),
@@ -2319,7 +2510,7 @@ class _CompactWorkerCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 7),
                           Text(
-                            'Choisir',
+                            'StayUp',
                             style: GoogleFonts.inter(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -2361,6 +2552,13 @@ class _WorkerMetaRow extends StatelessWidget {
       segments.add(_MetaChip(
         icon: LucideIcons.navigation,
         label: '${worker.distanceKm!.toStringAsFixed(1)} km',
+      ));
+    }
+    if (worker.rating != null && worker.rating! > 0) {
+      if (segments.isNotEmpty) segments.add(_MetaSeparator());
+      segments.add(_MetaChip(
+        icon: LucideIcons.star,
+        label: worker.rating!.toStringAsFixed(1),
       ));
     }
 

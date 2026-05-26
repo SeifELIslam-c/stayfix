@@ -9,6 +9,7 @@ import 'package:hotel_lux_os/core/manager_session_guard.dart';
 import 'package:hotel_lux_os/core/firebase_options.dart';
 import 'package:hotel_lux_os/core/theme.dart';
 import 'package:hotel_lux_os/providers/hotel_provider.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/dashboard_screen.dart';
 import 'package:hotel_lux_os/screens/manager_device_lock_screen.dart';
@@ -101,20 +102,30 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   Future<void> _bootstrap() async {
-    final nextScreenFuture = _resolveNextScreen();
-    final lottieLoadFuture = AssetLottie('assets/lottie/loading.json').load();
-
-    final results = await Future.wait<Object?>([
-      nextScreenFuture,
-      lottieLoadFuture,
-      Future<void>.delayed(const Duration(milliseconds: 1200)),
-    ]);
+    Widget? nextScreen;
+    try {
+      final results = await Future.wait<Object?>(
+        [
+          _resolveNextScreen(),
+          AssetLottie('assets/lottie/loading.json').load().then<Object?>(
+                (v) => v,
+                onError: (_) => null,
+              ),
+          Future<void>.delayed(const Duration(milliseconds: 1200)),
+        ],
+        eagerError: false,
+      );
+      nextScreen = results[0] as Widget?;
+    } catch (e) {
+      debugPrint('Splash bootstrap error: $e');
+    }
 
     if (!mounted) return;
-    final Widget nextScreen = results[0]! as Widget;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => nextScreen),
+      MaterialPageRoute(
+        builder: (_) => nextScreen ?? const AuthScreen(),
+      ),
     );
   }
 
@@ -133,6 +144,7 @@ class _SplashPageState extends State<SplashPage> {
       return const AuthScreen();
     }
 
+    final sessionUid = AppSessionService.currentUserId;
     if (provider.isDirector) {
       if (FirebaseAuth.instance.currentUser == null) {
         await provider.logout();
@@ -146,6 +158,10 @@ class _SplashPageState extends State<SplashPage> {
       }
 
       return resolveManagerDestination();
+    }
+
+    if (AppSessionService.hasCondoAccess && sessionUid.isNotEmpty) {
+      return resolveSessionDestination(sessionUid);
     }
 
     try {
@@ -166,9 +182,6 @@ class _SplashPageState extends State<SplashPage> {
       debugPrint("Biometric error: $e");
     }
 
-    if (provider.isDirector) {
-      return resolveManagerDestination();
-    }
     return const DashboardScreen();
   }
 

@@ -1,4 +1,4 @@
-﻿// ignore_for_file: unused_element, unused_field
+// ignore_for_file: unused_element, unused_field
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -8,24 +8,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
-import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
-import 'package:hotel_lux_os/screens/condu_profile_screen.dart';
 import 'package:hotel_lux_os/screens/intervenants_screen.dart';
+import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
 import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
+import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-// ── Color constants ───────────────────────────────────────────────────────────
+// -- Color constants -----------------------------------------------------------
 const _kMsgBg = Color(0xFF070707);
 const _kMsgCard = Color(0xFF111111);
 const _kMsgCardBorder = Color(0x33D6A85A);
 const _kOrangeDot = Color(0xFFFF6B35);
 const _kGreenDot = Color(0xFF22C55E);
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Data models
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ConvItem {
   const _ConvItem({
@@ -81,21 +80,21 @@ class _ConvItem {
 
 class _WorkerCache {
   final String? username;
-  final String? department;
+  final String? subtitle;
   final String? photoBase64;
   final String? photoUrl;
   final bool isAvailable;
   _WorkerCache(
       {this.username,
-      this.department,
+      this.subtitle,
       this.photoBase64,
       this.photoUrl,
       this.isAvailable = false});
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Main screen
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class ManagerMessagesScreen extends StatefulWidget {
   const ManagerMessagesScreen({super.key});
@@ -160,11 +159,35 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
           break;
         }
       }
-      final dept = (d['department'] as String?)?.trim();
+      final department = (d['department'] as String?)?.trim();
       final avail = d['isAvailable'] as bool? ?? false;
+      String? specialty;
+      for (final key in ['specialty', 'speciality']) {
+        final value = (d[key] as String?)?.trim();
+        if (value != null && value.isNotEmpty) {
+          specialty = value;
+          break;
+        }
+      }
+      if (specialty == null) {
+        final list = d['specialties'];
+        if (list is List) {
+          for (final item in list) {
+            final value = item?.toString().trim() ?? '';
+            if (value.isNotEmpty) {
+              specialty = value;
+              break;
+            }
+          }
+        }
+      }
       final cache = _WorkerCache(
         username: name,
-        department: dept,
+        subtitle: _resolveWorkerSubtitle(
+          department: department,
+          specialty: specialty,
+          fallbackRole: (d['role'] as String?)?.trim(),
+        ),
         photoBase64: photo,
         photoUrl: photoUrl,
         isAvailable: avail,
@@ -344,7 +367,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
     );
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────────
+  // -- Build -------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -355,7 +378,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
       backgroundColor: _kMsgBg,
       body: Stack(
         children: [
-          // ── Main scrollable content ─────────────────────────────────────
+          // -- Main scrollable content -------------------------------------
           Column(
             children: [
               // Header
@@ -446,13 +469,13 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
               ),
             ],
           ),
-          // ── Floating compose button ─────────────────────────────────────
+          // -- Floating compose button -------------------------------------
           Positioned(
             bottom: 120,
             right: 20,
             child: _ComposeFab(onTap: _openCompose),
           ),
-          // ── Bottom nav ─────────────────────────────────────────────────
+          // -- Bottom nav -------------------------------------------------
           Positioned(
             bottom: 0,
             left: 0,
@@ -460,7 +483,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
             child: _MsgBottomNav(
               onAccueil: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const CondoDashboardScreen()),
+                MaterialPageRoute(builder: (_) => buildManagerHomeScreen()),
               ),
               onAgents: () => Navigator.pushReplacement(
                 context,
@@ -472,7 +495,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
               ),
               onProfil: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const ConduProfileScreen()),
+                MaterialPageRoute(builder: (_) => buildManagerProfileScreen()),
               ),
             ),
           ),
@@ -512,7 +535,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
       id: conv.id,
       type: conv.type,
       title: cache.username ?? conv.title,
-      subtitle: cache.department ?? conv.subtitle,
+      subtitle: cache.subtitle ?? conv.subtitle,
       lastMessage: conv.lastMessage,
       unread: conv.unread,
       isAvailable: cache.isAvailable,
@@ -524,9 +547,61 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+bool _isQualifiedLaborDepartment(String? department) {
+  final normalized = (department ?? '')
+      .toLowerCase()
+      .replaceAll('œ', 'oe')
+      .replaceAll(RegExp(r'[^a-z]'), '');
+  return normalized.contains('maindoeuvrequalifie');
+}
+
+String? _resolveWorkerSubtitle({
+  required String? department,
+  required String? specialty,
+  required String? fallbackRole,
+}) {
+  final trimmedSpecialty = (specialty ?? '').trim();
+  if (_isQualifiedLaborDepartment(department) && trimmedSpecialty.isNotEmpty) {
+    return trimmedSpecialty;
+  }
+
+  final trimmedDepartment = (department ?? '').trim();
+  if (trimmedDepartment.isNotEmpty) {
+    return trimmedDepartment;
+  }
+
+  final trimmedRole = (fallbackRole ?? '').trim();
+  if (trimmedRole.isNotEmpty) {
+    return trimmedRole;
+  }
+
+  return null;
+}
+
+String? _resolveSpecialtyValue(Map<String, dynamic> data) {
+  for (final key in ['specialty', 'speciality']) {
+    final value = (data[key] as String?)?.trim();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+  }
+
+  final list = data['specialties'];
+  if (list is List) {
+    for (final item in list) {
+      final value = item?.toString().trim() ?? '';
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+  }
+
+  return null;
+}
+
+// -----------------------------------------------------------------------------
 // _MsgHeader
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _MsgHeader extends StatelessWidget {
   const _MsgHeader({required this.uid});
@@ -560,9 +635,9 @@ class _MsgHeader extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _ManagerAvatar
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ManagerAvatar extends StatelessWidget {
   const _ManagerAvatar({required this.uid});
@@ -644,9 +719,9 @@ class _ManagerAvatar extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _BellButton
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _BellButton extends StatelessWidget {
   const _BellButton();
@@ -687,9 +762,9 @@ class _BellButton extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _SearchRow
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _SearchRow extends StatelessWidget {
   const _SearchRow({
@@ -707,9 +782,9 @@ class _SearchRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _FilterChips
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _FilterChips extends StatelessWidget {
   const _FilterChips({required this.selected, required this.onSelect});
@@ -781,9 +856,9 @@ class _FilterChips extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _SectionHeader
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.unreadCount});
@@ -836,9 +911,9 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _ConvCard
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ConvCard extends StatelessWidget {
   const _ConvCard({
@@ -952,9 +1027,9 @@ class _ConvCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _ConvAvatar
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ConvAvatar extends StatelessWidget {
   const _ConvAvatar({required this.conv});
@@ -1013,6 +1088,34 @@ class _ConvAvatar extends StatelessWidget {
       IconData icon;
       switch (conv.type) {
         case 'team':
+          if (conv.photoUrl != null && conv.photoUrl!.isNotEmpty) {
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: kAuthGold.withValues(alpha: 0.45),
+                      width: 1.5,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.network(
+                    conv.photoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _InitialAvatar(
+                      initial: conv.title.isNotEmpty
+                          ? conv.title[0].toUpperCase()
+                          : '?',
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
           if (conv.memberPhotoBase64s.isNotEmpty) {
             avatar = _GroupAvatarStack(photos: conv.memberPhotoBase64s);
             return Stack(
@@ -1175,9 +1278,9 @@ class _InitialAvatar extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _SkeletonList — loading placeholder
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _SkeletonList extends StatelessWidget {
   const _SkeletonList();
@@ -1240,9 +1343,9 @@ class _SkeletonCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _EmptyConvsState
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _EmptyConvsState extends StatelessWidget {
   const _EmptyConvsState({required this.onContactIntervenant});
@@ -1313,9 +1416,9 @@ class _EmptyConvsState extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _ComposeFab
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ComposeFab extends StatelessWidget {
   const _ComposeFab({required this.onTap});
@@ -1345,9 +1448,9 @@ class _ComposeFab extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _ComposeSheet
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _ComposeSheet extends StatelessWidget {
   const _ComposeSheet({
@@ -1460,9 +1563,9 @@ class _ComposeOption extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // _MsgBottomNav
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 class _MsgBottomNav extends StatelessWidget {
   const _MsgBottomNav({
@@ -1751,7 +1854,12 @@ class _CreateGroupSheetState extends State<_CreateGroupSheet> {
           }
         }
         if (name.isEmpty) continue;
-        final dept = (data['department'] as String?)?.trim() ?? '';
+        final subtitle = _resolveWorkerSubtitle(
+              department: (data['department'] as String?)?.trim(),
+              specialty: _resolveSpecialtyValue(data),
+              fallbackRole: (data['role'] as String?)?.trim(),
+            ) ??
+            '';
         String? photo;
         for (final k in ['photoBase64', 'profilePhotoBase64', 'imageBase64']) {
           final v = (data[k] as String?)?.trim();
@@ -1763,7 +1871,7 @@ class _CreateGroupSheetState extends State<_CreateGroupSheet> {
         list.add(<String, dynamic>{
           'id': id,
           'name': name,
-          'dept': dept,
+          'subtitle': subtitle,
           'photo': photo,
         });
       }
@@ -1786,7 +1894,7 @@ class _CreateGroupSheetState extends State<_CreateGroupSheet> {
     return _workers
         .where((w) =>
             (w['name'] as String).toLowerCase().contains(q) ||
-            (w['dept'] as String).toLowerCase().contains(q))
+            (w['subtitle'] as String).toLowerCase().contains(q))
         .toList();
   }
 
@@ -1955,8 +2063,8 @@ class _CreateGroupSheetState extends State<_CreateGroupSheet> {
                                                 color: Colors.white,
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600)),
-                                        if ((w['dept'] as String).isNotEmpty)
-                                          Text(w['dept'] as String,
+                                        if ((w['subtitle'] as String).isNotEmpty)
+                                          Text(w['subtitle'] as String,
                                               style: GoogleFonts.inter(
                                                   color: kAuthGold,
                                                   fontSize: 11,

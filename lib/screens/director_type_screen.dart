@@ -1,11 +1,11 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
+import 'package:hotel_lux_os/screens/immeuble_dashboard.dart';
 import 'package:hotel_lux_os/screens/manager_profile_config.dart';
-import 'package:hotel_lux_os/screens/other_property_dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class DirectorTypeScreen extends StatefulWidget {
@@ -59,11 +59,12 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
 
       if (!mounted) return;
 
-      final Widget nextScreen =
-          (option.value == 'apartment_condo_owner' ||
-                  option.value == 'villa_owner')
-              ? CondoDashboardScreen(propertyType: option.value)
-              : OtherPropertyDashboard(propertyType: option.label);
+      final Widget nextScreen = option.value == 'building_manager' ||
+              option.value == 'rental_building'
+          ? ImmeubleDashboardScreen(propertyType: option.value)
+          : CondoDashboardScreen(
+              propertyType: option.value,
+            );
 
       Navigator.pushReplacement(
         context,

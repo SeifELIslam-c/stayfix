@@ -2,6 +2,7 @@
 
 import 'package:country_picker/country_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +10,7 @@ import 'package:hotel_lux_os/models/hotel_models.dart';
 import 'package:hotel_lux_os/providers/hotel_provider.dart';
 import 'package:hotel_lux_os/screens/dashboard_screen.dart';
 import 'package:hotel_lux_os/screens/manager_navigation.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
 import 'package:hotel_lux_os/screens/terms_screen.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -49,6 +51,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  bool _isAppleLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _rememberMe = true;
@@ -68,6 +71,10 @@ class _AuthScreenState extends State<AuthScreen> {
   );
 
   bool get _isLogin => widget.isLogin;
+  bool get _supportsAppleSignIn =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   bool get _isLoginFormValid =>
       _emailCtrl.text.trim().isNotEmpty && _passwordCtrl.text.trim().isNotEmpty;
@@ -163,6 +170,20 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _handleAppleLogin() async {
+    setState(() => _isAppleLoading = true);
+    final provider = Provider.of<HotelProvider>(context, listen: false);
+    final bool success = await provider.loginWithApple();
+
+    if (!mounted) return;
+    setState(() => _isAppleLoading = false);
+    if (success) {
+      _navigateToNextScreen();
+    } else {
+      showAuthError(context, 'Connexion Apple echouee');
+    }
+  }
+
   Future<void> _handleRegister() async {
     if (_usernameCtrl.text.trim().isEmpty) {
       showAuthError(context, "Le nom d'utilisateur est requis");
@@ -225,6 +246,24 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _handleAppleRegister() async {
+    setState(() => _isAppleLoading = true);
+    final provider = Provider.of<HotelProvider>(context, listen: false);
+    final bool success = await provider.loginWithApple();
+
+    if (!mounted) return;
+    setState(() => _isAppleLoading = false);
+    if (success) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const TermsScreen()),
+        (route) => false,
+      );
+    } else {
+      showAuthError(context, 'Inscription Apple echouee');
+    }
+  }
+
   void _navigateToRegister() {
     Navigator.push(
       context,
@@ -250,6 +289,17 @@ class _AuthScreenState extends State<AuthScreen> {
     final user = provider.currentUser;
     if (user != null && user.role == UserRoles.director) {
       resolveManagerDestination().then((nextScreen) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => nextScreen),
+        );
+      });
+    } else if (AppSessionService.hasCondoAccess &&
+        AppSessionService.currentUserId.isNotEmpty) {
+      resolveSessionDestination(AppSessionService.currentUserId).then((
+        nextScreen,
+      ) {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
@@ -684,6 +734,14 @@ class _AuthScreenState extends State<AuthScreen> {
           onPressed: _isGoogleLoading ? null : _handleGoogleLogin,
           compact: isCompactHeight,
         ),
+        if (_supportsAppleSignIn) ...[
+          SizedBox(height: isCompactHeight ? 6 : 8),
+          _AppleButton(
+            isLoading: _isAppleLoading,
+            onPressed: _isAppleLoading ? null : _handleAppleLogin,
+            compact: isCompactHeight,
+          ),
+        ],
         SizedBox(height: isCompactHeight ? 6 : 8),
         Center(
           child: InkWell(
@@ -862,6 +920,14 @@ class _AuthScreenState extends State<AuthScreen> {
           onPressed: _isGoogleLoading ? null : _handleGoogleRegister,
           compact: true,
         ),
+        if (_supportsAppleSignIn) ...[
+          SizedBox(height: isCompactHeight ? 6 : 8),
+          _AppleButton(
+            isLoading: _isAppleLoading,
+            onPressed: _isAppleLoading ? null : _handleAppleRegister,
+            compact: true,
+          ),
+        ],
         SizedBox(height: isCompactHeight ? 6 : 8),
         Center(
           child: InkWell(
@@ -933,17 +999,10 @@ class _AuthHero extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Image.asset(
-              'lib/assets/stayfix_login_hero.png',
+              'assets/authheroimg.webp',
               fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-              errorBuilder: (_, __, ___) {
-                return Image.asset(
-                  'assets/authheroimg.webp',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  errorBuilder: (_, __, ___) => Container(color: kAuthBg),
-                );
-              },
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) => Container(color: kAuthBg),
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -1376,6 +1435,58 @@ class _GoogleGlyph extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
+    );
+  }
+}
+
+class _AppleButton extends StatelessWidget {
+  const _AppleButton({
+    required this.isLoading,
+    required this.onPressed,
+    this.compact = false,
+  });
+
+  final bool isLoading;
+  final VoidCallback? onPressed;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isLoading ? null : onPressed,
+      child: Container(
+        height: compact ? 52 : 56,
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF222222)),
+        ),
+        alignment: Alignment.center,
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.2,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.apple, color: Colors.white, size: 22),
+                  SizedBox(width: compact ? 12 : 14),
+                  Text(
+                    'Continuer avec Apple',
+                    style: GoogleFonts.cormorantGaramond(
+                      color: Colors.white,
+                      fontSize: compact ? 17 : 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }

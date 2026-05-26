@@ -10,14 +10,22 @@ const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const port = Number(process.env.PORT || 8080);
-const baseUrl = (process.env.BASE_URL || `http://159.89.98.134:${port}`).replace(/\/$/, '');
+const baseUrl = (process.env.BASE_URL || `https://159.89.98.134:${port}`).replace(/\/$/, '');
 const allowUnverifiedUploads = process.env.ALLOW_UNVERIFIED_UPLOADS === 'true';
 const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './firebase-service-account.json';
 const maxImageBytes = Number(process.env.MAX_IMAGE_MB || 15) * 1024 * 1024;
 const maxAudioBytes = Number(process.env.MAX_AUDIO_MB || 20) * 1024 * 1024;
+const inviteWebhookToken = (process.env.INVITE_WEBHOOK_TOKEN || '').trim();
+const smtpHost = (process.env.SMTP_HOST || '').trim();
+const smtpPort = Number(process.env.SMTP_PORT || 465);
+const smtpSecure = `${process.env.SMTP_SECURE || 'true'}`.toLowerCase() === 'true';
+const smtpUser = (process.env.SMTP_USER || '').trim();
+const smtpPass = process.env.SMTP_PASS || '';
+const smtpFrom = (process.env.SMTP_FROM || smtpUser).trim();
 
 const rootDir = path.resolve(__dirname, '..');
 const storageDir = path.join(rootDir, 'storage');
@@ -56,6 +64,18 @@ const upload = multer({
   limits: { fileSize: Math.max(maxImageBytes, maxAudioBytes) },
 });
 
+const mailer = smtpHost && smtpUser && smtpPass
+  ? nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    })
+  : null;
+
 async function verifyAuth(req, res, next) {
   if (allowUnverifiedUploads) {
     req.auth = { uid: req.header('X-User-Id') || 'dev-user' };
@@ -79,6 +99,20 @@ async function verifyAuth(req, res, next) {
   } catch (error) {
     return res.status(401).json({ error: 'invalid token' });
   }
+}
+
+function verifyInviteWebhook(req, res, next) {
+  if (!inviteWebhookToken) {
+    return res.status(500).json({ error: 'invite webhook token is not configured' });
+  }
+
+  const authHeader = req.header('Authorization') || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (token !== inviteWebhookToken) {
+    return res.status(401).json({ error: 'invalid webhook token' });
+  }
+
+  return next();
 }
 
 function safeFileName(originalName) {
@@ -136,6 +170,73 @@ async function readMeta(fileId) {
   const filePath = path.join(metaDir, `${fileId}.json`);
   const raw = await fsp.readFile(filePath, 'utf8');
   return JSON.parse(raw);
+}
+
+async function updateInviteQueue(queueDocId, patch) {
+  if (!queueDocId || !admin.apps.length) return;
+  try {
+    await admin.firestore().collection('outbound_emails').doc(queueDocId).set(
+      patch,
+      { merge: true },
+    );
+  } catch (error) {
+    console.warn('failed to update outbound_emails queue', error.message || error);
+  }
+}
+
+function escapeHtml(value) {
+  return `${value || ''}`
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildInviteEmail(payload) {
+  const propertyNames = Array.isArray(payload.propertyNames)
+    ? payload.propertyNames.filter(Boolean)
+    : [];
+  const accountLabel = payload.accountType === 'concierge' ? 'Concierge' : 'Gestionnaire';
+  const propertiesHtml = propertyNames.length
+    ? `<ul>${propertyNames.map((name) => `<li>${escapeHtml(name)}</li>`).join('')}</ul>`
+    : '<p>Aucun appartement attribue.</p>';
+
+  const text = [
+    `Bonjour ${payload.fullName || ''},`,
+    '',
+    `Un compte Stayfix a ete cree pour vous en tant que ${accountLabel}.`,
+    `Identifiant: ${payload.username}`,
+    `Mot de passe: ${payload.password}`,
+    propertyNames.length
+      ? `Appartements attribues: ${propertyNames.join(', ')}`
+      : 'Appartements attribues: Aucun',
+    '',
+    'Connectez-vous dans Stayfix avec ces informations.',
+  ].join('\n');
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;background:#f7f1e8;padding:24px;color:#111111">
+      <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:18px;padding:28px;border:1px solid #ead7b4">
+        <p style="margin-top:0">Bonjour ${escapeHtml(payload.fullName || '')},</p>
+        <h2 style="margin:0 0 14px;color:#111111">Votre compte Stayfix est pret</h2>
+        <p style="line-height:1.6;margin:0 0 16px">
+          Un compte a ete cree pour vous en tant que <strong>${accountLabel}</strong>.
+        </p>
+        <div style="background:#111111;color:#ffffff;border-radius:14px;padding:18px;margin:18px 0">
+          <p style="margin:0 0 8px"><strong>Identifiant:</strong> ${escapeHtml(payload.username)}</p>
+          <p style="margin:0"><strong>Mot de passe:</strong> ${escapeHtml(payload.password)}</p>
+        </div>
+        <h3 style="margin:18px 0 8px;color:#111111">Appartements attribues</h3>
+        ${propertiesHtml}
+        <p style="line-height:1.6;margin:18px 0 0">
+          Connectez-vous dans Stayfix avec ces informations. Nous vous conseillons de changer votre mot de passe apres la premiere connexion.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return { text, html, accountLabel };
 }
 
 app.get('/health', (_, res) => {
@@ -216,6 +317,74 @@ app.post('/api/media/delete-many', verifyAuth, async (req, res) => {
   }
 
   res.json({ deleted, missing, failed });
+});
+
+app.post('/api/email/invite', verifyInviteWebhook, async (req, res) => {
+  const queueDocId = `${req.body?.queueDocId || ''}`.trim();
+  const email = `${req.body?.email || ''}`.trim();
+  const fullName = `${req.body?.fullName || ''}`.trim();
+  const username = `${req.body?.username || ''}`.trim();
+  const password = `${req.body?.password || ''}`.trim();
+  const accountType = `${req.body?.accountType || ''}`.trim();
+  const propertyNames = Array.isArray(req.body?.propertyNames)
+    ? req.body.propertyNames.map((value) => `${value || ''}`.trim()).filter(Boolean)
+    : [];
+
+  if (!mailer) {
+    await updateInviteQueue(queueDocId, {
+      status: 'failed',
+      errorMessage: 'mailer-not-configured',
+      failedAt: new Date().toISOString(),
+    });
+    return res.status(500).json({ error: 'mailer is not configured' });
+  }
+
+  if (!email || !username || !password) {
+    await updateInviteQueue(queueDocId, {
+      status: 'failed',
+      errorMessage: 'missing-required-fields',
+      failedAt: new Date().toISOString(),
+    });
+    return res.status(400).json({ error: 'email, username, and password are required' });
+  }
+
+  try {
+    const { text, html, accountLabel } = buildInviteEmail({
+      fullName,
+      username,
+      password,
+      accountType,
+      propertyNames,
+    });
+
+    const info = await mailer.sendMail({
+      from: smtpFrom,
+      to: email,
+      subject: `Stayfix - Votre compte ${accountLabel}`,
+      text,
+      html,
+    });
+
+    await updateInviteQueue(queueDocId, {
+      status: 'sent',
+      sentAt: new Date().toISOString(),
+      smtpMessageId: info.messageId || null,
+    });
+
+    return res.status(200).json({
+      ok: true,
+      messageId: info.messageId || null,
+    });
+  } catch (error) {
+    await updateInviteQueue(queueDocId, {
+      status: 'failed',
+      errorMessage: error.message || 'send-failed',
+      failedAt: new Date().toISOString(),
+    });
+    return res.status(500).json({
+      error: error.message || 'send failed',
+    });
+  }
 });
 
 app.listen(port, () => {

@@ -1,16 +1,18 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
-import 'package:hotel_lux_os/screens/condu_profile_screen.dart';
 import 'package:hotel_lux_os/screens/intervenants_screen.dart';
 import 'package:hotel_lux_os/screens/create_manager_offer_screen.dart';
+import 'package:hotel_lux_os/screens/manager_offer_detail_screen.dart';
 import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
+import 'package:hotel_lux_os/screens/manager_notifications_screen.dart';
+import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
+import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // ── Color constants ───────────────────────────────────────────────────────────
@@ -49,12 +51,14 @@ class _OfferItem {
       id: doc.id,
       title: d['title'] as String? ?? '',
       description: d['description'] as String? ?? '',
-      category: d['category'] as String? ?? 'autre',
-      status: d['status'] as String? ?? 'ouverte',
+      category:
+          (d['category'] as String?) ?? (d['specialty'] as String?) ?? 'autre',
+      status: _normalizeManagerOfferStatus(d['status'] as String?),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
       deadline: (d['deadline'] as Timestamp?)?.toDate(),
-      budget: (d['budget'] as num?)?.toDouble(),
-      assignedToId: d['assignedToId'] as String?,
+      budget: ((d['budget'] ?? d['budgetAmount']) as num?)?.toDouble(),
+      assignedToId:
+          (d['assignedToId'] as String?) ?? (d['assignedWorkerId'] as String?),
     );
   }
 }
@@ -76,6 +80,9 @@ class _WorkerOfferItem {
     this.photoUrl,
     this.price,
     this.originalRate,
+    this.targetCity,
+    this.targetRegion,
+    this.managerLocationScope,
     this.createdAt,
   });
 
@@ -94,6 +101,9 @@ class _WorkerOfferItem {
   final bool isPromotion;
   final bool isFeatured;
   final bool isAvailable;
+  final String? targetCity;
+  final String? targetRegion;
+  final String? managerLocationScope;
   final DateTime? createdAt;
 
   int? get discountPercent {
@@ -103,6 +113,11 @@ class _WorkerOfferItem {
     return null;
   }
 
+  String get displayDepartmentLabel => _resolveOfferDepartmentLabel(
+        department: workerDepartment,
+        specialtyOrCategory: category,
+      );
+
   factory _WorkerOfferItem.fromDoc(DocumentSnapshot doc) {
     final d = doc.data() as Map<String, dynamic>;
     return _WorkerOfferItem(
@@ -110,20 +125,55 @@ class _WorkerOfferItem {
       workerId: d['workerId'] as String? ?? '',
       workerName: d['workerName'] as String? ?? 'Intervenant',
       workerDepartment: d['workerDepartment'] as String? ?? '',
-      photoBase64: d['photoBase64'] as String?,
-      photoUrl: VpsMediaService.resolveProfileImageUrl(d),
+      photoBase64:
+          (d['workerPhotoBase64'] as String?) ?? (d['photoBase64'] as String?),
+      photoUrl: ((d['workerPhotoUrl'] as String?)?.trim().isNotEmpty ?? false)
+          ? VpsMediaService.normalizeMediaUrlSync(
+              d['workerPhotoUrl'] as String?)
+          : VpsMediaService.resolveProfileImageUrl(d),
       title: d['title'] as String? ?? '',
       description: d['description'] as String? ?? '',
-      category: d['category'] as String? ?? 'autre',
-      price: (d['price'] as num?)?.toDouble() ??
-          (d['promotionalRate'] as num?)?.toDouble(),
+      category: (d['selectedSpecialty'] as String?) ??
+          (d['category'] as String?) ??
+          'autre',
+      price: (d['promotionalRate'] as num?)?.toDouble() ??
+          (d['regularRate'] as num?)?.toDouble() ??
+          (d['price'] as num?)?.toDouble(),
       originalRate: (d['originalRate'] as num?)?.toDouble(),
-      isActive: d['isActive'] as bool? ?? true,
+      isActive: (d['status'] as String?)?.trim() == 'active' ||
+          ((d['isActive'] as bool?) ?? false) ||
+          ((d['visibleToManagers'] as bool?) ?? false),
       isPromotion: d['isPromotion'] as bool? ?? false,
       isFeatured: d['isFeatured'] as bool? ?? false,
-      isAvailable: d['isAvailable'] as bool? ?? false,
+      isAvailable: (d['isAvailableNow'] as bool?) ??
+          (d['isAvailable'] as bool?) ??
+          false,
+      targetCity: (d['targetCity'] as String?)?.trim(),
+      targetRegion: (d['targetRegion'] as String?)?.trim(),
+      managerLocationScope: (d['managerLocationScope'] as String?)?.trim(),
       createdAt: (d['createdAt'] as Timestamp?)?.toDate(),
     );
+  }
+}
+
+String _normalizeManagerOfferStatus(String? raw) {
+  switch ((raw ?? '').trim()) {
+    case 'open':
+    case 'ouverte':
+      return 'ouverte';
+    case 'assigned':
+    case 'assignee':
+      return 'assignee';
+    case 'completed':
+    case 'terminee':
+      return 'terminee';
+    case 'en_cours':
+      return 'en_cours';
+    case 'cancelled':
+    case 'annulee':
+      return 'annulee';
+    default:
+      return 'ouverte';
   }
 }
 
@@ -247,7 +297,7 @@ class _ManagerOffersScreenState extends State<ManagerOffersScreen> {
             child: _OffersBottomNav(
               onAccueil: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const CondoDashboardScreen()),
+                MaterialPageRoute(builder: (_) => buildManagerHomeScreen()),
               ),
               onAgents: () => Navigator.pushReplacement(
                 context,
@@ -260,7 +310,7 @@ class _ManagerOffersScreenState extends State<ManagerOffersScreen> {
               ),
               onProfil: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const ConduProfileScreen()),
+                MaterialPageRoute(builder: (_) => buildManagerProfileScreen()),
               ),
             ),
           ),
@@ -380,16 +430,42 @@ class _BellButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF1A1A1A),
-        border: Border.all(color: kAuthGold.withValues(alpha: 0.35), width: 1),
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ManagerNotificationsScreen(),
+        ),
       ),
-      child: Icon(LucideIcons.bell,
-          color: Colors.white.withValues(alpha: 0.80), size: 18),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF1A1A1A),
+              border: Border.all(
+                  color: kAuthGold.withValues(alpha: 0.35), width: 1),
+            ),
+            child: Icon(
+              LucideIcons.bell,
+              color: Colors.white.withValues(alpha: 0.80),
+              size: 18,
+            ),
+          ),
+          const Positioned(
+            top: 0,
+            right: 0,
+            child: UnreadMessagesDot(
+              size: 9,
+              color: Color(0xFFFF3B30),
+              borderColor: Color(0xFF1A1A1A),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -498,7 +574,6 @@ class _MesOffresTabState extends State<_MesOffresTab> {
       _stream = FirebaseFirestore.instance
           .collection('offers')
           .where('createdByManagerId', isEqualTo: widget.uid)
-          .orderBy('createdAt', descending: true)
           .snapshots();
     }
   }
@@ -515,6 +590,14 @@ class _MesOffresTabState extends State<_MesOffresTab> {
         final allItems = snap.hasData
             ? snap.data!.docs.map(_OfferItem.fromDoc).toList()
             : <_OfferItem>[];
+        allItems.sort((a, b) {
+          final aCreatedAt = a.createdAt;
+          final bCreatedAt = b.createdAt;
+          if (aCreatedAt == null && bCreatedAt == null) return 0;
+          if (aCreatedAt == null) return 1;
+          if (bCreatedAt == null) return -1;
+          return bCreatedAt.compareTo(aCreatedAt);
+        });
 
         final filtered = allItems.where((o) {
           if (_activeStatus != 'toutes' && o.status != _activeStatus) {
@@ -1090,7 +1173,6 @@ class _WorkerOffersTabState extends State<_WorkerOffersTab> {
         setState(() {
           _stream = FirebaseFirestore.instance
               .collection('worker_offers')
-              .where('isActive', isEqualTo: true)
               .orderBy('createdAt', descending: true)
               .snapshots();
         });
@@ -1103,23 +1185,10 @@ class _WorkerOffersTabState extends State<_WorkerOffersTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: _LocationSelector(
-            name: _condoName,
-            location: _condoLocation,
-            loading: _condoLoading,
-          ),
-        ),
+        const SizedBox(height: 8),
         _OfferFilterChips(
           active: _activeChip,
-          onSelect: (s) {
-            if (s == 'plus') {
-              widget.showSoon('Plus de catégories bientôt disponibles.');
-              return;
-            }
-            setState(() => _activeChip = s);
-          },
+          onSelect: (s) => setState(() => _activeChip = s),
         ),
         const SizedBox(height: 8),
         Expanded(
@@ -1137,6 +1206,7 @@ class _WorkerOffersTabState extends State<_WorkerOffersTab> {
                 items: allItems,
                 activeChip: _activeChip,
                 condoName: _condoName,
+                condoLocation: _condoLocation,
                 showSoon: widget.showSoon,
               );
             },
@@ -1378,11 +1448,12 @@ class _OffersBottomNav extends StatelessWidget {
               label: 'Offres',
               isActive: true,
             ),
-            _OffersNavItem(
-              icon: LucideIcons.messageCircle,
-              label: 'Messages',
+            UnreadMessagesNavItem(
               isActive: false,
               onTap: onMessages,
+              activeColor: kAuthGold,
+              inactiveColor: Colors.white.withValues(alpha: 0.65),
+              dotColor: const Color(0xFFFF3B30),
             ),
             _OffersNavItem(
               icon: LucideIcons.user,
@@ -1461,95 +1532,6 @@ IconData _iconFor(String category) {
   }
 }
 
-// ── Location Selector ─────────────────────────────────────────────────────────
-class _LocationSelector extends StatelessWidget {
-  const _LocationSelector({
-    required this.name,
-    required this.location,
-    required this.loading,
-  });
-
-  final String name;
-  final String location;
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) {
-    final displayText = loading
-        ? 'Chargement...'
-        : (name.isNotEmpty
-            ? '$name${location.isNotEmpty ? ' • $location' : ''}'
-            : 'Votre établissement');
-
-    return Row(
-      children: [
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            shape: BoxShape.circle,
-            border: Border.all(color: _kOffersBorder),
-          ),
-          child: const Icon(LucideIcons.mapPin, color: kAuthGold, size: 18),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF181818),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _kOffersBorder),
-            ),
-            child: Row(
-              children: [
-                const Icon(LucideIcons.mapPin, color: kAuthGold, size: 16),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    displayText,
-                    style: GoogleFonts.inter(
-                      color: loading
-                          ? Colors.white.withValues(alpha: 0.40)
-                          : Colors.white.withValues(alpha: 0.85),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const Icon(
-                  LucideIcons.chevronDown,
-                  color: kAuthGold,
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Container(
-          width: 46,
-          height: 46,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            shape: BoxShape.circle,
-            border: Border.all(color: _kOffersBorder),
-          ),
-          child: Icon(
-            LucideIcons.slidersHorizontal,
-            color: Colors.white.withValues(alpha: 0.80),
-            size: 18,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Offer Filter Chips ────────────────────────────────────────────────────────
 class _OfferFilterChips extends StatelessWidget {
   const _OfferFilterChips({
@@ -1562,10 +1544,12 @@ class _OfferFilterChips extends StatelessWidget {
 
   static const _chips = [
     ('toutes', 'Toutes', LucideIcons.layoutGrid),
-    ('promotions', 'Promotions', LucideIcons.tag),
-    ('plomberie', 'Plomberie', LucideIcons.droplets),
-    ('electricite', 'Électricité', LucideIcons.zap),
-    ('plus', 'Plus', LucideIcons.moreHorizontal),
+    ('maintenance', 'Maintenance', LucideIcons.wrench),
+    ('main_oeuvre', 'Main-d\'oeuvre', LucideIcons.hammer),
+    ('chambres', 'Chambres', LucideIcons.bed),
+    ('houseman', 'Houseman', LucideIcons.building),
+    ('concierge', 'Concierge', LucideIcons.key),
+    ('menage', 'Ménage', LucideIcons.sparkles),
   ];
 
   @override
@@ -1628,21 +1612,49 @@ class _WorkerOffersBody extends StatelessWidget {
     required this.items,
     required this.activeChip,
     required this.condoName,
+    required this.condoLocation,
     required this.showSoon,
   });
 
   final List<_WorkerOfferItem> items;
   final String activeChip;
   final String condoName;
+  final String condoLocation;
   final void Function(String) showSoon;
+
+  void _openOfferDetail(BuildContext context, _WorkerOfferItem item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ManagerOfferDetailScreen(
+          workerId: item.workerId,
+          workerName: item.workerName,
+          workerDepartment: item.workerDepartment,
+          workerDisplayLabel: item.displayDepartmentLabel,
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          photoBase64: item.photoBase64,
+          photoUrl: item.photoUrl,
+          price: item.price,
+          originalRate: item.originalRate,
+          targetCity: item.targetCity,
+          targetRegion: item.targetRegion,
+          isAvailable: item.isAvailable,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final filtered = items.where((o) {
-      if (activeChip == 'promotions' && !o.isPromotion) return false;
-      if (activeChip == 'plomberie' && o.category != 'plomberie') return false;
-      if (activeChip == 'electricite' && o.category != 'electricite') {
-        return false;
+      if (!o.isActive) return false;
+      if (!_matchesManagerLocation(o, condoLocation)) return false;
+      if (activeChip != 'toutes') {
+        final cat = _normalizeToken(o.category);
+        final dept = _normalizeToken(o.workerDepartment);
+        if (!_matchesDepartmentChip(activeChip, cat, dept)) return false;
       }
       return true;
     }).toList();
@@ -1678,7 +1690,10 @@ class _WorkerOffersBody extends StatelessWidget {
             ...regularItems.map(
               (item) => Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                child: _RegularOfferCard(item: item, showSoon: showSoon),
+                child: _RegularOfferCard(
+                  item: item,
+                  showSoon: (_) => _openOfferDetail(context, item),
+                ),
               ),
             ),
           const SizedBox(height: 16),
@@ -1688,7 +1703,112 @@ class _WorkerOffersBody extends StatelessWidget {
   }
 }
 
+bool _matchesManagerLocation(_WorkerOfferItem item, String condoLocation) {
+  final cityRegion = _cityRegionFromLocation(condoLocation);
+  final city = _normalizeToken(cityRegion.$1);
+  final region = _normalizeToken(cityRegion.$2);
+  final itemCity = _normalizeToken(item.targetCity);
+  final itemRegion = _normalizeToken(item.targetRegion);
+  final scope = _normalizeToken(item.managerLocationScope);
+
+  if (scope.isEmpty || scope == 'same_city') {
+    if (city.isEmpty || itemCity.isEmpty) return true;
+    return city == itemCity;
+  }
+  if (scope == 'same_region') {
+    if (region.isEmpty || itemRegion.isEmpty) return true;
+    return region == itemRegion;
+  }
+  return true;
+}
+
+(String, String) _cityRegionFromLocation(String raw) {
+  final parts = raw
+      .split(',')
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.length >= 2) {
+    return (parts[parts.length - 2], parts.last);
+  }
+  if (parts.length == 1) {
+    return (parts.first, '');
+  }
+  return ('', '');
+}
+
+bool _matchesDepartmentChip(String chip, String cat, String dept) {
+  switch (chip) {
+    case 'maintenance':
+      return cat.contains('maintenance') || dept.contains('maintenance');
+    case 'main_oeuvre':
+      return cat.contains('main') ||
+          dept.contains('main') ||
+          cat.contains('qualifie') ||
+          dept.contains('qualifie');
+    case 'chambres':
+      return cat.contains('chambre') ||
+          dept.contains('chambre') ||
+          cat.contains('prepos') ||
+          dept.contains('prepos');
+    case 'houseman':
+      return cat.contains('houseman') || dept.contains('houseman');
+    case 'concierge':
+      return cat.contains('concierge') ||
+          dept.contains('concierge') ||
+          cat.contains('reception') ||
+          dept.contains('reception');
+    case 'menage':
+      return cat.contains('menage') ||
+          dept.contains('menage') ||
+          cat.contains('nettoyage') ||
+          dept.contains('nettoyage');
+    default:
+      return true;
+  }
+}
+
+String _normalizeToken(String? raw) {
+  return (raw ?? '')
+      .trim()
+      .toLowerCase()
+      .replaceAll('é', 'e')
+      .replaceAll('è', 'e')
+      .replaceAll('ê', 'e')
+      .replaceAll('à', 'a')
+      .replaceAll('ù', 'u')
+      .replaceAll('ô', 'o')
+      .replaceAll('î', 'i');
+}
+
 // ── Promotions Carousel ───────────────────────────────────────────────────────
+bool _isQualifiedLaborDepartment(String? department) {
+  final normalized = _normalizeToken(department)
+      .replaceAll('œ', 'oe')
+      .replaceAll("'", '')
+      .replaceAll('-', '')
+      .replaceAll(RegExp(r'[^a-z]'), '');
+  return normalized.contains('maindoeuvrequalifiee') ||
+      normalized.contains('maindoeuvrequalifie');
+}
+
+String _resolveOfferDepartmentLabel({
+  required String? department,
+  required String? specialtyOrCategory,
+}) {
+  final trimmedSpecialty = (specialtyOrCategory ?? '').trim();
+  if (_isQualifiedLaborDepartment(department) && trimmedSpecialty.isNotEmpty) {
+    return trimmedSpecialty;
+  }
+
+  final trimmedDepartment = (department ?? '').trim();
+  if (trimmedDepartment.isNotEmpty) {
+    return trimmedDepartment;
+  }
+
+  return trimmedSpecialty;
+}
+
 class _PromotionsCarousel extends StatefulWidget {
   const _PromotionsCarousel({required this.items, required this.showSoon});
 
@@ -1902,9 +2022,7 @@ class _PromoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    item.workerDepartment.isNotEmpty
-                        ? item.workerDepartment
-                        : item.category,
+                    item.displayDepartmentLabel,
                     style: GoogleFonts.inter(
                       color: kAuthGold,
                       fontSize: 12,
@@ -2244,9 +2362,7 @@ class _RegularOfferCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    item.workerDepartment.isNotEmpty
-                        ? item.workerDepartment
-                        : item.category,
+                    item.displayDepartmentLabel,
                     style: GoogleFonts.inter(
                       color: kAuthGold,
                       fontSize: 12,

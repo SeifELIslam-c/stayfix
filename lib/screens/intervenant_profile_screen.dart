@@ -1,4 +1,4 @@
-﻿// ignore_for_file: unused_element
+// ignore_for_file: unused_element
 
 import 'dart:convert';
 
@@ -8,11 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hotel_lux_os/screens/auth_screen.dart';
 import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
+import 'package:hotel_lux_os/screens/manager_notifications_screen.dart';
 import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
 import 'package:hotel_lux_os/services/vps_media_service.dart';
+import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:hotel_lux_os/providers/hotel_provider.dart';
 
 // ── Local constants ────────────────────────────────────────────────────────────
 const _kProfBg = Color(0xFF070707);
@@ -63,6 +67,13 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
   Map<String, dynamic>? _data;
   bool _isLoading = true;
   String? _error;
+  final Map<String, bool> _sectionExpanded = <String, bool>{
+    'availability': false,
+    'personal': false,
+    'professional': false,
+    'languages': false,
+    'verifications': false,
+  };
 
   @override
   void initState() {
@@ -114,7 +125,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
         backgroundColor: _kProfCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
-          'Choisir cet intervenant ?',
+          'Passer en StayUp avec cet intervenant ?',
           style: GoogleFonts.inter(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -150,7 +161,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
             ),
             onPressed: () {
               Navigator.pop(context);
-              _showSnack('Intervenant sélectionné');
+              _showSnack('Intervenant passe en StayUp');
             },
             child: Text(
               'Confirmer',
@@ -200,6 +211,92 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
               }
             : null,
       ),
+    );
+  }
+
+  Future<void> _showQuickActionsMenu() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _QuickActionsSheet(
+        onMessagesTap: () async {
+          Navigator.pop(context);
+          await _openWorkerConversation(sendSelectionMessage: false);
+        },
+        onNotificationsTap: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ManagerNotificationsScreen(),
+            ),
+          );
+        },
+        onContactTap: () async {
+          Navigator.pop(context);
+          await _handleContactChat();
+        },
+        onLogoutTap: () async {
+          Navigator.pop(context);
+          await _handleLogout();
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: _kProfCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Text(
+              'Se deconnecter ?',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            content: Text(
+              'Vous devrez vous reconnecter pour acceder a votre espace.',
+              style: GoogleFonts.inter(
+                color: Colors.white.withValues(alpha: 0.75),
+                height: 1.4,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Annuler',
+                  style: GoogleFonts.inter(color: Colors.white70),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kAuthGold,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Deconnexion',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmed != true || !mounted) return;
+    await Provider.of<HotelProvider>(context, listen: false).logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+      (_) => false,
     );
   }
 
@@ -408,6 +505,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
     final Map<String, dynamic> quest = questionnaire is Map
         ? Map<String, dynamic>.from(questionnaire)
         : const {};
+    final rating = (data['rating'] as num?)?.toDouble();
 
     return CustomScrollView(
       slivers: [
@@ -418,12 +516,19 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
             headlineHint: displayRoleHint,
             address: address,
             expYears: expYears,
+            rating: rating,
             photoUrl: photoUrl,
             photoBytes: photoBytes,
             initials: initials,
             onBack: () => Navigator.pop(context),
             onChat: () => _openWorkerConversation(sendSelectionMessage: false),
-            onBell: () => _showSnack('Aucune notification pour le moment.'),
+            onMenu: _showQuickActionsMenu,
+            onBell: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ManagerNotificationsScreen(),
+              ),
+            ),
           ),
         ),
         SliverToBoxAdapter(
@@ -450,9 +555,26 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        // Availability card — shown first
+        SliverToBoxAdapter(
+          child: _AvailabilityCard(
+            slots: availSlots,
+            isExpanded: _sectionExpanded['availability'] ?? true,
+            onToggle: () => setState(() {
+              _sectionExpanded['availability'] =
+                  !(_sectionExpanded['availability'] ?? true);
+            }),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 12)),
         // Personal info card
         SliverToBoxAdapter(
           child: _SectionCard(
+            isExpanded: _sectionExpanded['personal'] ?? false,
+            onToggle: () => setState(() {
+              _sectionExpanded['personal'] =
+                  !(_sectionExpanded['personal'] ?? false);
+            }),
             icon: LucideIcons.user,
             title: 'Informations personnelles',
             rows: [
@@ -475,6 +597,11 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
         // Professional profile card
         SliverToBoxAdapter(
           child: _SectionCard(
+            isExpanded: _sectionExpanded['professional'] ?? true,
+            onToggle: () => setState(() {
+              _sectionExpanded['professional'] =
+                  !(_sectionExpanded['professional'] ?? true);
+            }),
             icon: LucideIcons.briefcase,
             title: 'Profil professionnel',
             rows: [
@@ -528,15 +655,17 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 12)),
-        // Availability card
-        SliverToBoxAdapter(
-          child: _AvailabilityCard(slots: availSlots),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 12)),
         // Languages card
         SliverToBoxAdapter(
           child: _LanguagesCard(
-              speaksFrench: speaksFrench, speaksEnglish: speaksEnglish),
+            speaksFrench: speaksFrench,
+            speaksEnglish: speaksEnglish,
+            isExpanded: _sectionExpanded['languages'] ?? true,
+            onToggle: () => setState(() {
+              _sectionExpanded['languages'] =
+                  !(_sectionExpanded['languages'] ?? true);
+            }),
+          ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 12)),
         // Verifications card
@@ -544,6 +673,11 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
           child: _VerificationsCard(
             cvReviewAuth: cvReviewAuth,
             quest: quest,
+            isExpanded: _sectionExpanded['verifications'] ?? true,
+            onToggle: () => setState(() {
+              _sectionExpanded['verifications'] =
+                  !(_sectionExpanded['verifications'] ?? true);
+            }),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 12)),
@@ -584,11 +718,13 @@ class _ProfileHeroSection extends StatelessWidget {
     required this.headlineHint,
     required this.address,
     required this.expYears,
+    required this.rating,
     required this.photoUrl,
     required this.photoBytes,
     required this.initials,
     required this.onBack,
     required this.onChat,
+    required this.onMenu,
     required this.onBell,
   });
 
@@ -597,11 +733,13 @@ class _ProfileHeroSection extends StatelessWidget {
   final String headlineHint;
   final String address;
   final int? expYears;
+  final double? rating;
   final String? photoUrl;
   final Uint8List? photoBytes;
   final String initials;
   final VoidCallback onBack;
   final VoidCallback onChat;
+  final VoidCallback onMenu;
   final VoidCallback onBell;
 
   @override
@@ -653,21 +791,25 @@ class _ProfileHeroSection extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Stack(
-                        clipBehavior: Clip.none,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _CircleBtn(icon: LucideIcons.bell, onTap: onBell),
-                          Positioned(
-                            top: 5,
-                            right: 5,
-                            child: Container(
-                              width: 9,
-                              height: 9,
-                              decoration: const BoxDecoration(
-                                color: _kOrangeDot,
-                                shape: BoxShape.circle,
+                          _CircleBtn(icon: LucideIcons.menu, onTap: onMenu),
+                          const SizedBox(width: 10),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              _CircleBtn(icon: LucideIcons.bell, onTap: onBell),
+                              const Positioned(
+                                top: 5,
+                                right: 5,
+                                child: UnreadMessagesDot(
+                                  size: 9,
+                                  color: _kOrangeDot,
+                                  borderColor: Color(0xFF070707),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
@@ -760,6 +902,41 @@ class _ProfileHeroSection extends StatelessWidget {
                                 ),
                               ),
                             ],
+                            if (rating != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(
+                                    color: kAuthGold.withValues(alpha: 0.28),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.star,
+                                      color: kAuthGold,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      rating!.toStringAsFixed(1),
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -845,7 +1022,7 @@ class _PrimaryBtn extends StatelessWidget {
             const Icon(LucideIcons.userPlus, size: 18, color: Colors.black),
             const SizedBox(width: 10),
             Text(
-              'Choisir cet intervenant',
+              'StayUp avec cet intervenant',
               style: GoogleFonts.inter(
                 color: Colors.black,
                 fontSize: 15,
@@ -904,16 +1081,21 @@ class _SectionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.rows,
+    required this.isExpanded,
+    required this.onToggle,
     this.extraChild,
   });
 
   final IconData icon;
   final String title;
-  final List<Widget> rows;
+  final List<_InfoRow> rows;
+  final bool isExpanded;
+  final VoidCallback onToggle;
   final Widget? extraChild;
 
   @override
   Widget build(BuildContext context) {
+    final visibleRows = rows.where((row) => row.shouldDisplay).toList();
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
@@ -925,34 +1107,57 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: kAuthGold, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  color: kAuthGold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: onToggle,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                Icon(icon, color: kAuthGold, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    color: kAuthGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Icon(
-                LucideIcons.chevronUp,
-                color: Colors.white.withValues(alpha: 0.30),
-                size: 16,
-              ),
-            ],
+                const Spacer(),
+                AnimatedRotation(
+                  turns: isExpanded ? 0 : 0.5,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    LucideIcons.chevronUp,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Divider(
-              color: Colors.white.withValues(alpha: 0.08),
-              height: 1,
-              thickness: 1),
-          const SizedBox(height: 8),
-          ...rows,
-          if (extraChild != null) extraChild!,
+          if (isExpanded) ...[
+            const SizedBox(height: 12),
+            Divider(
+                color: Colors.white.withValues(alpha: 0.08),
+                height: 1,
+                thickness: 1),
+            const SizedBox(height: 8),
+            if (visibleRows.isEmpty && extraChild == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Aucune information selectionnee.',
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withValues(alpha: 0.45),
+                    fontSize: 13,
+                  ),
+                ),
+              )
+            else ...[
+              ...visibleRows,
+              if (extraChild != null) extraChild!,
+            ],
+          ],
         ],
       ),
     );
@@ -969,6 +1174,8 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String? value;
   final bool isLast;
+
+  bool get shouldDisplay => value?.trim().isNotEmpty == true;
 
   @override
   Widget build(BuildContext context) {
@@ -1049,8 +1256,14 @@ class _SpecialtyChip extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _AvailabilityCard extends StatelessWidget {
-  const _AvailabilityCard({required this.slots});
+  const _AvailabilityCard({
+    required this.slots,
+    required this.isExpanded,
+    required this.onToggle,
+  });
   final List<String> slots;
+  final bool isExpanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -1065,44 +1278,54 @@ class _AvailabilityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.clock, color: kAuthGold, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'Disponibilités',
-                style: GoogleFonts.inter(
-                  color: kAuthGold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: onToggle,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.clock, color: kAuthGold, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Disponibilités',
+                  style: GoogleFonts.inter(
+                    color: kAuthGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Icon(
-                LucideIcons.chevronUp,
-                color: Colors.white.withValues(alpha: 0.30),
-                size: 16,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Divider(
-              color: Colors.white.withValues(alpha: 0.08),
-              height: 1,
-              thickness: 1),
-          const SizedBox(height: 10),
-          if (slots.isEmpty)
-            const _EmptyState(label: 'Disponibilités non renseignées')
-          else
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: slots.map((slot) {
-                final isAlways = slot.toLowerCase().contains('toujours') ||
-                    slot.toLowerCase().contains('tous les jours');
-                return _AvailPill(label: slot, isGreen: isAlways);
-              }).toList(),
+                const Spacer(),
+                AnimatedRotation(
+                  turns: isExpanded ? 0 : 0.5,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    LucideIcons.chevronUp,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    size: 22,
+                  ),
+                ),
+              ],
             ),
+          ),
+          if (isExpanded) ...[
+            const SizedBox(height: 12),
+            Divider(
+                color: Colors.white.withValues(alpha: 0.08),
+                height: 1,
+                thickness: 1),
+            const SizedBox(height: 10),
+            if (slots.isEmpty)
+              const _EmptyState(label: 'Disponibilités non renseignées')
+            else
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: slots.map((slot) {
+                  final isAlways = slot.toLowerCase().contains('toujours') ||
+                      slot.toLowerCase().contains('tous les jours');
+                  return _AvailPill(label: slot, isGreen: isAlways);
+                }).toList(),
+              ),
+          ],
         ],
       ),
     );
@@ -1157,10 +1380,16 @@ class _AvailPill extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _LanguagesCard extends StatelessWidget {
-  const _LanguagesCard(
-      {required this.speaksFrench, required this.speaksEnglish});
+  const _LanguagesCard({
+    required this.speaksFrench,
+    required this.speaksEnglish,
+    required this.isExpanded,
+    required this.onToggle,
+  });
   final bool speaksFrench;
   final bool speaksEnglish;
+  final bool isExpanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -1176,39 +1405,49 @@ class _LanguagesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.languages, color: kAuthGold, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'Langues',
-                style: GoogleFonts.inter(
-                  color: kAuthGold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: onToggle,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.languages, color: kAuthGold, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Langues',
+                  style: GoogleFonts.inter(
+                    color: kAuthGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Icon(
-                LucideIcons.chevronUp,
-                color: Colors.white.withValues(alpha: 0.30),
-                size: 16,
-              ),
-            ],
+                const Spacer(),
+                AnimatedRotation(
+                  turns: isExpanded ? 0 : 0.5,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    LucideIcons.chevronUp,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Divider(
-              color: Colors.white.withValues(alpha: 0.08),
-              height: 1,
-              thickness: 1),
-          const SizedBox(height: 8),
-          if (!hasAny)
-            const _EmptyState(label: 'Langues non renseignées')
-          else ...[
-            if (speaksFrench)
-              _LangRow(language: 'Français', isLast: !speaksEnglish),
-            if (speaksEnglish)
-              const _LangRow(language: 'Anglais', isLast: true),
+          if (isExpanded) ...[
+            const SizedBox(height: 12),
+            Divider(
+                color: Colors.white.withValues(alpha: 0.08),
+                height: 1,
+                thickness: 1),
+            const SizedBox(height: 8),
+            if (!hasAny)
+              const _EmptyState(label: 'Langues non renseignées')
+            else ...[
+              if (speaksFrench)
+                _LangRow(language: 'Français', isLast: !speaksEnglish),
+              if (speaksEnglish)
+                const _LangRow(language: 'Anglais', isLast: true),
+            ],
           ],
         ],
       ),
@@ -1259,9 +1498,16 @@ class _LangRow extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 class _VerificationsCard extends StatelessWidget {
-  const _VerificationsCard({required this.cvReviewAuth, required this.quest});
+  const _VerificationsCard({
+    required this.cvReviewAuth,
+    required this.quest,
+    required this.isExpanded,
+    required this.onToggle,
+  });
   final bool cvReviewAuth;
   final Map<String, dynamic> quest;
+  final bool isExpanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -1270,6 +1516,31 @@ class _VerificationsCard extends StatelessWidget {
     final noCriminal = quest['noCriminalRecord'] as bool?;
     final referred = quest['referredByEmployee'] as bool?;
     final referralId = (quest['referralEmployeeId'] as String?)?.trim();
+
+    // Build only the rows the worker actually filled in.
+    // cvReviewAuth is always shown (it's a required bool field).
+    final showReferralId =
+        referred == true && referralId != null && referralId.isNotEmpty;
+    final rows = <Widget>[
+      if (authorizedCanada != null)
+        _VerifRow(
+          label: 'Autorisé à travailler au Canada',
+          value: authorizedCanada,
+        ),
+      if (isAdult != null)
+        _VerifRow(label: 'Majeur (18 ans et plus)', value: isAdult),
+      if (noCriminal != null)
+        _VerifRow(label: 'Aucun casier judiciaire', value: noCriminal),
+      if (referred != null)
+        _VerifRow(label: 'Référé par un employé', value: referred),
+      _VerifRow(
+        label: 'Autorisation de révision CV',
+        value: cvReviewAuth,
+        isLast: !showReferralId,
+      ),
+      if (showReferralId)
+        _VerifRow(label: 'ID du référent', valueText: referralId, isLast: true),
+    ];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1282,45 +1553,46 @@ class _VerificationsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.shieldCheck, color: kAuthGold, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'Vérifications',
-                style: GoogleFonts.inter(
-                  color: kAuthGold,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: onToggle,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.shieldCheck, color: kAuthGold, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Vérifications',
+                  style: GoogleFonts.inter(
+                    color: kAuthGold,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Icon(
-                LucideIcons.chevronUp,
-                color: Colors.white.withValues(alpha: 0.30),
-                size: 16,
-              ),
-            ],
+                const Spacer(),
+                AnimatedRotation(
+                  turns: isExpanded ? 0 : 0.5,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    LucideIcons.chevronUp,
+                    color: Colors.white.withValues(alpha: 0.45),
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Divider(
-              color: Colors.white.withValues(alpha: 0.08),
-              height: 1,
-              thickness: 1),
-          const SizedBox(height: 8),
-          _VerifRow(
-              label: 'Autorisé à travailler au Canada',
-              value: authorizedCanada),
-          _VerifRow(label: 'Majeur (18 ans et plus)', value: isAdult),
-          _VerifRow(label: 'Aucun casier judiciaire', value: noCriminal),
-          _VerifRow(label: 'Référé par un employé', value: referred),
-          _VerifRow(
-              label: 'Autorisation de révision CV',
-              value: cvReviewAuth,
-              isLast: referred != true || referralId == null),
-          if (referred == true && referralId != null && referralId.isNotEmpty)
-            _VerifRow(
-                label: 'ID du référent', valueText: referralId, isLast: true),
+          if (isExpanded) ...[
+            const SizedBox(height: 12),
+            Divider(
+                color: Colors.white.withValues(alpha: 0.08),
+                height: 1,
+                thickness: 1),
+            const SizedBox(height: 8),
+            if (rows.isEmpty)
+              const _EmptyState(label: 'Aucune vérification renseignée.')
+            else
+              ...rows,
+          ],
         ],
       ),
     );
@@ -1924,6 +2196,107 @@ class _ManagerWorkerContactSheet extends StatelessWidget {
               subtitle: 'Ouvrir le composeur telephonique',
               onTap: onCallTap!,
             ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: double.infinity,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                'Fermer',
+                style: GoogleFonts.inter(
+                  color: Colors.white.withValues(alpha: 0.60),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionsSheet extends StatelessWidget {
+  const _QuickActionsSheet({
+    required this.onMessagesTap,
+    required this.onNotificationsTap,
+    required this.onContactTap,
+    required this.onLogoutTap,
+  });
+
+  final Future<void> Function() onMessagesTap;
+  final VoidCallback onNotificationsTap;
+  final Future<void> Function() onContactTap;
+  final Future<void> Function() onLogoutTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF111111),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        20 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Raccourcis',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _ContactActionTile(
+            icon: LucideIcons.messageCircle,
+            title: 'Messages',
+            subtitle: 'Ouvrir la conversation avec cet intervenant',
+            onTap: onMessagesTap,
+          ),
+          const SizedBox(height: 10),
+          _ContactActionTile(
+            icon: LucideIcons.bell,
+            title: 'Notifications',
+            subtitle: 'Voir les notifications du manager',
+            onTap: () async => onNotificationsTap(),
+          ),
+          const SizedBox(height: 10),
+          _ContactActionTile(
+            icon: LucideIcons.phoneCall,
+            title: 'Contacter',
+            subtitle: 'Afficher les actions de contact rapides',
+            onTap: onContactTap,
+          ),
+          const SizedBox(height: 10),
+          _ContactActionTile(
+            icon: LucideIcons.logOut,
+            title: 'Deconnexion',
+            subtitle: 'Quitter la session et revenir a la connexion',
+            onTap: onLogoutTap,
+          ),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: () => Navigator.pop(context),

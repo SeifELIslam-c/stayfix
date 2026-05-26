@@ -1,11 +1,41 @@
+import 'dart:convert';
+import 'dart:math';
 import 'dart:async';
+import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hotel_lux_os/core/manager_session_guard.dart';
 import 'package:hotel_lux_os/models/hotel_models.dart';
+import 'package:hotel_lux_os/services/app_session_service.dart';
+import 'package:hotel_lux_os/services/property_scope_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+class AccountDeletionResult {
+  const AccountDeletionResult._({
+    required this.success,
+    required this.message,
+    this.requiresPassword = false,
+  });
+
+  const AccountDeletionResult.success(String message)
+      : this._(success: true, message: message);
+
+  const AccountDeletionResult.failure(
+    String message, {
+    bool requiresPassword = false,
+  }) : this._(
+          success: false,
+          message: message,
+          requiresPassword: requiresPassword,
+        );
+
+  final bool success;
+  final String message;
+  final bool requiresPassword;
+}
 
 class HotelProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -37,6 +67,11 @@ class HotelProvider extends ChangeNotifier {
   }
 
   bool get isDirector => _currentUser?.role == UserRoles.director;
+  Set<String> get currentAuthProviders => _auth.currentUser?.providerData
+          .map((provider) => provider.providerId)
+          .where((provider) => provider.trim().isNotEmpty)
+          .toSet() ??
+      <String>{};
 
   HotelProvider() {
     tryAutoLogin();
@@ -52,8 +87,13 @@ class HotelProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? savedUserId = prefs.getString('userId');
+      final authUser = _auth.currentUser;
 
       if (savedUserId != null && savedUserId.isNotEmpty) {
+        if (authUser == null || authUser.uid.trim() != savedUserId.trim()) {
+          await logout();
+          return;
+        }
         await _fetchUserData(savedUserId);
 
         if (_currentUser != null) {
@@ -81,6 +121,11 @@ class HotelProvider extends ChangeNotifier {
           UserCredential cred = await _auth.signInWithEmailAndPassword(
               email: input, password: password);
           await _fetchUserData(cred.user!.uid);
+          if (PropertyScopeService.isStayFixJobOnly(AppSessionService.currentUserData) ||
+              PropertyScopeService.isDisabled(AppSessionService.currentUserData)) {
+            await logout();
+            return false;
+          }
           await _saveSession(cred.user!.uid);
           listenToMyHotels();
           return true;
@@ -113,6 +158,11 @@ class HotelProvider extends ChangeNotifier {
       if (snapshot.docs.isNotEmpty) {
         final doc = snapshot.docs.first;
         await _fetchUserData(doc.id);
+        if (PropertyScopeService.isStayFixJobOnly(AppSessionService.currentUserData) ||
+            PropertyScopeService.isDisabled(AppSessionService.currentUserData)) {
+          await logout();
+          return false;
+        }
         await _saveSession(doc.id);
 
         if (_currentUser!.hotelId != null) {
@@ -138,12 +188,18 @@ class HotelProvider extends ChangeNotifier {
     ManagerSessionGuard.reset();
     _roomsSubscription?.cancel();
     _hotelsSubscription?.cancel();
-    await _auth.signOut();
+    AppSessionService.clear();
     _currentUser = null;
     _selectedHotel = null;
     _rooms = [];
     _myHotels = [];
+    _hotelStaff = [];
     notifyListeners();
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      debugPrint('Logout signOut error: $e');
+    }
   }
 
   void setHotel(Hotel? hotel) {
@@ -320,6 +376,7 @@ class HotelProvider extends ChangeNotifier {
           await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        AppSessionService.setCurrentUser(userId: doc.id, data: data);
         _currentUser = HotelUser(
           id: doc.id,
           email: data['email'] ?? '',
@@ -389,6 +446,9 @@ class HotelProvider extends ChangeNotifier {
   Future<bool> loginWithGoogle() async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
+      // Sign out first so the account picker is always shown,
+      // even when a previous session is still cached.
+      await googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return false;
 
@@ -430,6 +490,47 @@ class HotelProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Google Login Error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> loginWithApple() async {
+    if (kIsWeb) return false;
+    if (defaultTargetPlatform != TargetPlatform.iOS &&
+        defaultTargetPlatform != TargetPlatform.macOS) {
+      return false;
+    }
+    try {
+      final OAuthCredential credential = await _buildAppleOAuthCredential();
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+      if (user == null) return false;
+
+      final DocumentSnapshot doc =
+          await _firestore.collection('users').doc(user.uid).get();
+
+      if (!doc.exists) {
+        final fullName = (userCredential.user?.displayName ?? '').trim();
+        final firstName = _extractFirstName(fullName);
+        final lastName = _extractLastName(fullName);
+        await _firestore.collection('users').doc(user.uid).set({
+          'firstName': firstName,
+          'lastName': lastName,
+          'username': user.email?.split('@')[0] ?? 'stayfix_user',
+          'email': user.email ?? '',
+          'role': UserRoles.director,
+          'phone': '',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await _fetchUserData(user.uid);
+      await _saveSession(user.uid);
+      listenToMyHotels();
+      return true;
+    } catch (e) {
+      debugPrint('Apple Login Error: $e');
       return false;
     }
   }
@@ -533,5 +634,164 @@ class HotelProvider extends ChangeNotifier {
     } catch (e) {
       return false;
     }
+  }
+
+  Future<AccountDeletionResult> deleteCurrentAccount({
+    String? currentPassword,
+  }) async {
+    final authUser = _auth.currentUser;
+    final currentUser = _currentUser;
+    if (authUser == null || currentUser == null) {
+      return const AccountDeletionResult.failure(
+        'Aucun compte connecte.',
+      );
+    }
+
+    try {
+      await _reauthenticateForSensitiveAction(
+        user: authUser,
+        currentPassword: currentPassword,
+      );
+
+      final batch = _firestore.batch();
+      batch.delete(_firestore.collection('users').doc(authUser.uid));
+      batch.delete(_firestore.collection('profiles').doc(authUser.uid));
+      await batch.commit();
+
+      await authUser.delete();
+      await logout();
+      return const AccountDeletionResult.success(
+        'Votre compte a ete supprime.',
+      );
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'wrong-password') {
+        return const AccountDeletionResult.failure(
+          'Le mot de passe saisi est incorrect.',
+          requiresPassword: true,
+        );
+      }
+      if (error.code == 'requires-recent-login') {
+        return const AccountDeletionResult.failure(
+          'Reconnectez-vous puis relancez la suppression du compte.',
+        );
+      }
+      return AccountDeletionResult.failure(
+        'Suppression impossible: ${error.message ?? error.code}',
+        requiresPassword: currentAuthProviders.contains('password'),
+      );
+    } on SignInWithAppleAuthorizationException catch (error) {
+      return AccountDeletionResult.failure(
+        'Validation Apple annulee: ${error.message}.',
+      );
+    } on StateError catch (error) {
+      final requiresPassword =
+          error.toString().contains('password-required');
+      return AccountDeletionResult.failure(
+        requiresPassword
+            ? 'Saisissez votre mot de passe pour confirmer.'
+            : 'Suppression impossible pour le moment.',
+        requiresPassword: requiresPassword,
+      );
+    } catch (error) {
+      return const AccountDeletionResult.failure(
+        'Suppression impossible pour le moment.',
+      );
+    }
+  }
+
+  Future<void> _reauthenticateForSensitiveAction({
+    required User user,
+    String? currentPassword,
+  }) async {
+    final providers = currentAuthProviders;
+    if (providers.contains('password')) {
+      final email = user.email!.trim();
+      final password = currentPassword?.trim() ?? '';
+      if (email.isEmpty || password.isEmpty) {
+        throw StateError('password-required');
+      }
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+      return;
+    }
+
+    if (providers.contains('google.com')) {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        throw StateError('reauth-cancelled');
+      }
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await user.reauthenticateWithCredential(credential);
+      return;
+    }
+
+    if (providers.contains('apple.com')) {
+      final credential = await _buildAppleOAuthCredential();
+      await user.reauthenticateWithCredential(credential);
+    }
+  }
+
+  Future<OAuthCredential> _buildAppleOAuthCredential() async {
+    final rawNonce = _generateNonce();
+    final nonce = _sha256OfString(rawNonce);
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: const [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: nonce,
+    );
+    final idToken = appleCredential.identityToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-apple-token',
+        message: 'Apple identity token missing.',
+      );
+    }
+    return OAuthProvider('apple.com').credential(
+      idToken: idToken,
+      rawNonce: rawNonce,
+    );
+  }
+
+  String _extractFirstName(String fullName) {
+    final trimmed = fullName.trim();
+    if (trimmed.isEmpty) return '';
+    return trimmed.split(RegExp(r'\s+')).first;
+  }
+
+  String _extractLastName(String fullName) {
+    final parts = fullName
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.length <= 1) return '';
+    return parts.sublist(1).join(' ');
+  }
+
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List<String>.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256OfString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
   }
 }
