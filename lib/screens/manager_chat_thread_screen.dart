@@ -932,7 +932,7 @@ class _ManagerChatThreadScreenState extends State<ManagerChatThreadScreen> {
   Future<void> _openAddressPickerSheet() async {
     final mapsKey = await AppEnv.get(
       'GOOGLE_MAPS_API_KEY',
-      fallback: 'AIzaSyDmUG3v9t26WwvrxC068sgwKGTvgalt7IM',
+      fallback: '',
     );
     if (!mounted) return;
 

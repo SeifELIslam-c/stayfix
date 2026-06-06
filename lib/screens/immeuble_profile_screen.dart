@@ -28,7 +28,7 @@ const _kBg = Color(0xFF070707);
 const _kCard = Color(0xFF111111);
 const _kMutedCard = Color(0xFF171717);
 const _kBorder = Color(0x33D6A85A);
-const _kFallbackMapsKey = 'AIzaSyDmUG3v9t26WwvrxC068sgwKGTvgalt7IM';
+const _kFallbackMapsKey = '';
 
 class _ProfilePageData {
   const _ProfilePageData({

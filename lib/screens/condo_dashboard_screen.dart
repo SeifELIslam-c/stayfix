@@ -33,7 +33,7 @@ const _kDashPanel = Color(0xFF090909);
 const _kDashCard = Color(0xFF141414);
 const _kDashBorder = Color(0x33D6A85A);
 const _kStoryBlue = Color(0xFF2F8CFF);
-const _kFallbackMapsKey = 'AIzaSyDmUG3v9t26WwvrxC068sgwKGTvgalt7IM';
+const _kFallbackMapsKey = '';
 
 final Map<String, _LatLng?> _storyGeocodeCache = <String, _LatLng?>{};
 

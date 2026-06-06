@@ -23,7 +23,7 @@ import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // ── Google Maps API key ───────────────────────────────────────────────────────
-const _kFallbackMapsKey = 'AIzaSyDmUG3v9t26WwvrxC068sgwKGTvgalt7IM';
+const _kFallbackMapsKey = '';
 
 // ── Dark-gold UI constants ────────────────────────────────────────────────────
 const kDarkCard = Color(0xFF141414);

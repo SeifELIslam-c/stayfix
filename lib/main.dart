@@ -1,8 +1,8 @@
 ﻿import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hotel_lux_os/core/manager_session_guard.dart';
@@ -23,13 +23,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    if (kIsWeb || defaultTargetPlatform == TargetPlatform.windows) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } else {
-      await Firebase.initializeApp();
-    }
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+    );
   } catch (e) {
     runApp(ErrorApp(error: e.toString()));
     return;

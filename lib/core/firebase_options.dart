@@ -9,13 +9,9 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'Android uses google-services.json configuration.',
-        );
+        return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'iOS uses GoogleService-Info.plist configuration.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'MacOS configuration not provided',
@@ -40,5 +36,24 @@ class DefaultFirebaseOptions {
     projectId: "hotel-project-fa6f3",
     authDomain: "hotel-project-fa6f3.firebaseapp.com",
     storageBucket: "hotel-project-fa6f3.firebasestorage.app",
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: "AIzaSyDnAZPJ_gtZDypWjOBpHqd3hbNZAcmtHJY",
+    appId: "1:1084030875192:android:123e147d7261b5e35058cd",
+    messagingSenderId: "1084030875192",
+    projectId: "hotel-project-fa6f3",
+    storageBucket: "hotel-project-fa6f3.firebasestorage.app",
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: "AIzaSyDNh0gY2vCGnn4oZcqYCh05CrE3wY-7tKI",
+    appId: "1:1084030875192:ios:b3f4c73c2b6b8f5b5058cd",
+    messagingSenderId: "1084030875192",
+    projectId: "hotel-project-fa6f3",
+    storageBucket: "hotel-project-fa6f3.firebasestorage.app",
+    iosBundleId: "com.rezzaky.stayfix",
+    iosClientId:
+        "1084030875192-fbos8i5sujd887h3bdbg64vke7c86i26.apps.googleusercontent.com",
   );
 }
