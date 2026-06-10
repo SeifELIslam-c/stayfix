@@ -1,15 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/condo_dashboard_screen.dart';
-import 'package:stayfix/screens/director_type_screen.dart';
-import 'package:stayfix/screens/immeuble_dashboard.dart';
-import 'package:stayfix/screens/manager_profile_config.dart';
-import 'package:stayfix/screens/other_property_dashboard.dart';
-import 'package:stayfix/screens/terms_screen.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/property_scope_service.dart';
+import 'auth_screen.dart';
+import 'condo_dashboard_screen.dart';
+import 'director_type_screen.dart';
+import 'immeuble_dashboard.dart';
+import 'manager_profile_config.dart';
+import 'other_property_dashboard.dart';
+import 'terms_screen.dart';
+import '../services/app_session_service.dart';
+import '../services/property_scope_service.dart';
 
 Future<Widget> resolveManagerDestination() async {
   final user = FirebaseAuth.instance.currentUser;

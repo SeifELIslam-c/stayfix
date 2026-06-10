@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/condo_dashboard_screen.dart';
-import 'package:stayfix/screens/immeuble_dashboard.dart';
-import 'package:stayfix/screens/manager_profile_config.dart';
+import 'auth_screen.dart';
+import 'condo_dashboard_screen.dart';
+import 'immeuble_dashboard.dart';
+import 'manager_profile_config.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class DirectorTypeScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
     if (option == null || _isLoading) {
       showAuthError(
         context,
-        'Sélectionnez votre profil pour continuer.',
+        'SÃ©lectionnez votre profil pour continuer.',
       );
       return;
     }
@@ -72,7 +72,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
       );
     } catch (_) {
       if (mounted) {
-        showAuthError(context, 'Erreur lors de l’enregistrement du profil.');
+        showAuthError(context, 'Erreur lors de lâ€™enregistrement du profil.');
       }
     } finally {
       if (mounted) {
@@ -149,7 +149,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Quel type de bien\ngérez-vous ?',
+                          'Quel type de bien\ngÃ©rez-vous ?',
                           style: GoogleFonts.cormorantGaramond(
                             fontSize: titleSize,
                             fontWeight: FontWeight.w700,
@@ -159,7 +159,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Sélectionnez votre profil pour personnaliser votre espace de gestion.',
+                          'SÃ©lectionnez votre profil pour personnaliser votre espace de gestion.',
                           style: GoogleFonts.manrope(
                             fontSize: isCompact ? 14 : 15.5,
                             fontWeight: FontWeight.w500,

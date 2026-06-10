@@ -6,28 +6,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/manager_chat_thread_screen.dart';
-import 'package:stayfix/screens/manager_notifications_screen.dart';
-import 'package:stayfix/services/manager_worker_contact_service.dart';
-import 'package:stayfix/services/vps_media_service.dart';
-import 'package:stayfix/widgets/unread_messages_nav_item.dart';
+import 'auth_screen.dart';
+import 'manager_chat_thread_screen.dart';
+import 'manager_notifications_screen.dart';
+import '../services/manager_worker_contact_service.dart';
+import '../services/vps_media_service.dart';
+import '../widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
+import '../providers/hotel_provider.dart';
 
-// ── Local constants ────────────────────────────────────────────────────────────
+// â”€â”€ Local constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _kProfBg = Color(0xFF070707);
 const _kProfCard = Color(0xFF111111);
 const _kProfGoldBorder = Color(0x44D6A85A);
 const _kProfGreen = Color(0xFF22C55E);
 const _kOrangeDot = Color(0xFFFF6B35);
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Screen
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _WorkerAvatarFallback extends StatelessWidget {
   const _WorkerAvatarFallback({
@@ -177,7 +177,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
     final phone = (_data?['phone'] as String?)?.trim();
     final email = (_data?['email'] as String?)?.trim();
     if ((phone == null || phone.isEmpty) && (email == null || email.isEmpty)) {
-      _showSnack('Coordonnées non renseignées');
+      _showSnack('CoordonnÃ©es non renseignÃ©es');
       return;
     }
     showModalBottomSheet(
@@ -457,7 +457,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
 
   Widget _buildContent() {
     final data = _data!;
-    final name = ((data['username'] as String?)?.trim()) ?? 'Non renseigné';
+    final name = ((data['username'] as String?)?.trim()) ?? 'Non renseignÃ©';
     final department = ((data['department'] as String?)?.trim()) ?? '';
     final directSpecialty = ((data['specialty'] as String?)?.trim()) ??
         ((data['speciality'] as String?)?.trim()) ??
@@ -555,7 +555,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
-        // Availability card — shown first
+        // Availability card â€” shown first
         SliverToBoxAdapter(
           child: _AvailabilityCard(
             slots: availSlots,
@@ -582,7 +582,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
               _InfoRow(
                   label: 'Email', value: (data['email'] as String?)?.trim()),
               _InfoRow(
-                  label: 'Téléphone',
+                  label: 'TÃ©lÃ©phone',
                   value: (data['phone'] as String?)?.trim()),
               _InfoRow(
                   label: 'Adresse', value: address.isNotEmpty ? address : null),
@@ -607,13 +607,13 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
             rows: [
               _InfoRow(
                 label: _isQualifiedLaborDepartment(department)
-                    ? 'Spécialité'
-                    : 'Département',
+                    ? 'SpÃ©cialitÃ©'
+                    : 'DÃ©partement',
                 value: displayRole.isNotEmpty ? displayRole : null,
               ),
               if (expYears != null)
                 _InfoRow(
-                    label: 'Expérience',
+                    label: 'ExpÃ©rience',
                     value: '$expYears an${expYears > 1 ? "s" : ""}'),
               _InfoRow(
                   label: 'Poste actuel',
@@ -622,7 +622,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
                   label: 'Lieu de travail',
                   value: (data['jobAddress'] as String?)?.trim()),
               _InfoRow(
-                  label: 'Date de début',
+                  label: 'Date de dÃ©but',
                   value: (data['jobStartDate'] as String?)?.trim(),
                   isLast: !showSpecialtiesSection),
             ],
@@ -633,7 +633,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Spécialités',
+                          'SpÃ©cialitÃ©s',
                           style: GoogleFonts.inter(
                             color: Colors.white.withValues(alpha: 0.45),
                             fontSize: 12,
@@ -698,7 +698,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
                       ),
                     )
                 : null,
-            onDownload: () => _showSnack('Téléchargement bientôt disponible.'),
+            onDownload: () => _showSnack('TÃ©lÃ©chargement bientÃ´t disponible.'),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -707,9 +707,9 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Hero section
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _ProfileHeroSection extends StatelessWidget {
   const _ProfileHeroSection({
@@ -995,9 +995,9 @@ class _ProfileHeroSection extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Action buttons
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _PrimaryBtn extends StatelessWidget {
   const _PrimaryBtn({required this.onTap});
@@ -1072,9 +1072,9 @@ class _SecondaryBtn extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Section card
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
@@ -1202,7 +1202,7 @@ class _InfoRow extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  (value?.isNotEmpty == true) ? value! : 'Non renseigné',
+                  (value?.isNotEmpty == true) ? value! : 'Non renseignÃ©',
                   textAlign: TextAlign.right,
                   style: GoogleFonts.inter(
                     color: (value?.isNotEmpty == true)
@@ -1251,9 +1251,9 @@ class _SpecialtyChip extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Availability card
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _AvailabilityCard extends StatelessWidget {
   const _AvailabilityCard({
@@ -1286,7 +1286,7 @@ class _AvailabilityCard extends StatelessWidget {
                 const Icon(LucideIcons.clock, color: kAuthGold, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'Disponibilités',
+                  'DisponibilitÃ©s',
                   style: GoogleFonts.inter(
                     color: kAuthGold,
                     fontSize: 14,
@@ -1314,7 +1314,7 @@ class _AvailabilityCard extends StatelessWidget {
                 thickness: 1),
             const SizedBox(height: 10),
             if (slots.isEmpty)
-              const _EmptyState(label: 'Disponibilités non renseignées')
+              const _EmptyState(label: 'DisponibilitÃ©s non renseignÃ©es')
             else
               Wrap(
                 spacing: 6,
@@ -1375,9 +1375,9 @@ class _AvailPill extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Languages card
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _LanguagesCard extends StatelessWidget {
   const _LanguagesCard({
@@ -1441,10 +1441,10 @@ class _LanguagesCard extends StatelessWidget {
                 thickness: 1),
             const SizedBox(height: 8),
             if (!hasAny)
-              const _EmptyState(label: 'Langues non renseignées')
+              const _EmptyState(label: 'Langues non renseignÃ©es')
             else ...[
               if (speaksFrench)
-                _LangRow(language: 'Français', isLast: !speaksEnglish),
+                _LangRow(language: 'FranÃ§ais', isLast: !speaksEnglish),
               if (speaksEnglish)
                 const _LangRow(language: 'Anglais', isLast: true),
             ],
@@ -1493,9 +1493,9 @@ class _LangRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Verifications card
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _VerificationsCard extends StatelessWidget {
   const _VerificationsCard({
@@ -1524,7 +1524,7 @@ class _VerificationsCard extends StatelessWidget {
     final rows = <Widget>[
       if (authorizedCanada != null)
         _VerifRow(
-          label: 'Autorisé à travailler au Canada',
+          label: 'AutorisÃ© Ã  travailler au Canada',
           value: authorizedCanada,
         ),
       if (isAdult != null)
@@ -1532,14 +1532,14 @@ class _VerificationsCard extends StatelessWidget {
       if (noCriminal != null)
         _VerifRow(label: 'Aucun casier judiciaire', value: noCriminal),
       if (referred != null)
-        _VerifRow(label: 'Référé par un employé', value: referred),
+        _VerifRow(label: 'RÃ©fÃ©rÃ© par un employÃ©', value: referred),
       _VerifRow(
-        label: 'Autorisation de révision CV',
+        label: 'Autorisation de rÃ©vision CV',
         value: cvReviewAuth,
         isLast: !showReferralId,
       ),
       if (showReferralId)
-        _VerifRow(label: 'ID du référent', valueText: referralId, isLast: true),
+        _VerifRow(label: 'ID du rÃ©fÃ©rent', valueText: referralId, isLast: true),
     ];
 
     return Container(
@@ -1561,7 +1561,7 @@ class _VerificationsCard extends StatelessWidget {
                 const Icon(LucideIcons.shieldCheck, color: kAuthGold, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'Vérifications',
+                  'VÃ©rifications',
                   style: GoogleFonts.inter(
                     color: kAuthGold,
                     fontSize: 14,
@@ -1589,7 +1589,7 @@ class _VerificationsCard extends StatelessWidget {
                 thickness: 1),
             const SizedBox(height: 8),
             if (rows.isEmpty)
-              const _EmptyState(label: 'Aucune vérification renseignée.')
+              const _EmptyState(label: 'Aucune vÃ©rification renseignÃ©e.')
             else
               ...rows,
           ],
@@ -1626,7 +1626,7 @@ class _VerifRow extends StatelessWidget {
       );
     } else if (value == null) {
       trailing = Text(
-        '—',
+        'â€”',
         style: GoogleFonts.inter(
           color: Colors.white.withValues(alpha: 0.30),
           fontSize: 13,
@@ -1672,9 +1672,9 @@ class _VerifRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // CV card
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _CvCard extends StatelessWidget {
   const _CvCard({
@@ -1734,7 +1734,7 @@ class _CvCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _OutlineButton(
-                  label: 'Plein écran',
+                  label: 'Plein Ã©cran',
                   icon: LucideIcons.maximize2,
                   onTap: onFullScreen ?? () {},
                   enabled: onFullScreen != null,
@@ -1743,7 +1743,7 @@ class _CvCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _GoldButton(
-                  label: 'Télécharger',
+                  label: 'TÃ©lÃ©charger',
                   icon: LucideIcons.download,
                   onTap: onDownload,
                 ),
@@ -1870,7 +1870,7 @@ class _CvWarningState extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Le candidat n\'a pas autorisé la révision de son CV.',
+              'Le candidat n\'a pas autorisÃ© la rÃ©vision de son CV.',
               style: GoogleFonts.inter(
                 color: Colors.orange.withValues(alpha: 0.85),
                 fontSize: 13,
@@ -1985,9 +1985,9 @@ class _PdfInlinePreviewState extends State<_PdfInlinePreview> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Full screen PDF page
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _PdfFullScreenPage extends StatelessWidget {
   const _PdfFullScreenPage({required this.pdfBytes, required this.fileName});
@@ -2032,9 +2032,9 @@ class _PdfFullScreenPage extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Contact bottom sheet
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _ContactSheet extends StatelessWidget {
   const _ContactSheet({this.phone, this.email});
@@ -2049,7 +2049,7 @@ class _ContactSheet extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Text(
-          '$label copié',
+          '$label copiÃ©',
           style: GoogleFonts.inter(
               color: Colors.white, fontWeight: FontWeight.w500),
         ),
@@ -2094,9 +2094,9 @@ class _ContactSheet extends StatelessWidget {
           if (phone != null && phone!.isNotEmpty)
             _ContactRow(
               icon: LucideIcons.phone,
-              label: 'Téléphone',
+              label: 'TÃ©lÃ©phone',
               value: phone!,
-              onTap: () => _copy(context, phone!, 'Téléphone'),
+              onTap: () => _copy(context, phone!, 'TÃ©lÃ©phone'),
             ),
           if (phone != null &&
               phone!.isNotEmpty &&
@@ -2459,9 +2459,9 @@ class _ContactRow extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Small shared widgets
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class _CircleBtn extends StatelessWidget {
   const _CircleBtn({required this.icon, required this.onTap});
@@ -2555,9 +2555,9 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Local helpers (duplicated to avoid circular import)
-// ═══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 Uint8List? _decodeBase64(String? rawValue) {
   if (rawValue == null || rawValue.trim().isEmpty) return null;
@@ -2590,7 +2590,7 @@ List<String> _parseStringList(dynamic raw) {
 bool _isQualifiedLaborDepartment(String department) {
   final normalized = department
       .toLowerCase()
-      .replaceAll('œ', 'oe')
+      .replaceAll('Å“', 'oe')
       .replaceAll(RegExp(r'[^a-z]'), '');
   return normalized.contains('maindoeuvrequalifie');
 }
@@ -2690,14 +2690,14 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
               .toSet()
               .length >=
           7;
-  if (allWeekAlways) return const ['Tous les jours • Toujours disponible'];
+  if (allWeekAlways) return const ['Tous les jours â€¢ Toujours disponible'];
 
   final result = <String>[];
   for (final slot in normalized) {
     final dayLabel = _weekdayLabel((slot['weekday'] as num?)?.toInt());
     if (_isAlwaysAvailableSlot(slot)) {
       result.add(dayLabel.isNotEmpty
-          ? '$dayLabel • Toujours disponible'
+          ? '$dayLabel â€¢ Toujours disponible'
           : 'Toujours disponible');
       continue;
     }
@@ -2713,14 +2713,14 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     );
     if (from != null && to != null) {
       result
-          .add(dayLabel.isNotEmpty ? '$dayLabel • $from - $to' : '$from - $to');
+          .add(dayLabel.isNotEmpty ? '$dayLabel â€¢ $from - $to' : '$from - $to');
       continue;
     }
     final existing = (slot['label']?.toString() ?? '').trim();
     if (existing.isNotEmpty) {
       result.add(
           dayLabel.isNotEmpty && !existing.toLowerCase().startsWith(dayLabel)
-              ? '$dayLabel • $existing'
+              ? '$dayLabel â€¢ $existing'
               : existing);
     }
   }

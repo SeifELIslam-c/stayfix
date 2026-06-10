@@ -8,24 +8,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/building_management_screen.dart';
-import 'package:stayfix/screens/intervenants_screen.dart';
-import 'package:stayfix/screens/manager_chat_thread_screen.dart';
-import 'package:stayfix/screens/manager_messages_screen.dart';
-import 'package:stayfix/screens/manager_notifications_screen.dart';
-import 'package:stayfix/screens/manager_offers_screen.dart';
-import 'package:stayfix/screens/manager_property_route_helper.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/manager_worker_contact_service.dart';
-import 'package:stayfix/services/property_scope_service.dart';
-import 'package:stayfix/services/vps_media_service.dart';
+import '../providers/hotel_provider.dart';
+import 'auth_screen.dart';
+import 'building_management_screen.dart';
+import 'intervenants_screen.dart';
+import 'manager_chat_thread_screen.dart';
+import 'manager_messages_screen.dart';
+import 'manager_notifications_screen.dart';
+import 'manager_offers_screen.dart';
+import 'manager_property_route_helper.dart';
+import '../services/app_session_service.dart';
+import '../services/manager_worker_contact_service.dart';
+import '../services/property_scope_service.dart';
+import '../services/vps_media_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
-import 'package:stayfix/widgets/unread_messages_nav_item.dart';
+import '../widgets/unread_messages_nav_item.dart';
 import 'package:provider/provider.dart';
 
 const _kDashBg = Color(0xFF070707);
@@ -1090,10 +1090,10 @@ class _StoryCardMedia extends StatelessWidget {
             ),
           );
         }
-        // Initialized but 0×0 (codec didn't report dimensions yet)
+        // Initialized but 0Ã—0 (codec didn't report dimensions yet)
         return VideoPlayer(controller!);
       }
-      // Video not yet ready — show a dark placeholder
+      // Video not yet ready â€” show a dark placeholder
       return Container(
         color: const Color(0xFF0A0A0A),
         alignment: Alignment.center,
@@ -2053,10 +2053,10 @@ class _StoryMedia extends StatelessWidget {
             ),
           );
         }
-        // Initialized but no reported dimensions — fill the screen directly
+        // Initialized but no reported dimensions â€” fill the screen directly
         return VideoPlayer(controller!);
       }
-      // Not yet initialized — black background while _initializingVideo shows spinner
+      // Not yet initialized â€” black background while _initializingVideo shows spinner
       return const ColoredBox(color: Colors.black);
     }
 

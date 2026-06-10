@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/vps_media_service.dart';
+import 'app_session_service.dart';
+import 'vps_media_service.dart';
 
 class WorkerBlockedException implements Exception {
   const WorkerBlockedException(this.conversationId);
@@ -322,10 +322,10 @@ class ManagerWorkerContactService {
   static bool _isQualifiedLaborDepartment(String? department) {
     final normalized = (department ?? '')
         .toLowerCase()
-        .replaceAll('œ', 'oe')
-        .replaceAll('é', 'e')
-        .replaceAll('è', 'e')
-        .replaceAll('ê', 'e')
+        .replaceAll('Å“', 'oe')
+        .replaceAll('Ã©', 'e')
+        .replaceAll('Ã¨', 'e')
+        .replaceAll('Ãª', 'e')
         .replaceAll(RegExp(r'[^a-z]'), '');
     return normalized.contains('maindoeuvrequalifiee') ||
         normalized.contains('mainoeuvrequalifiee');
@@ -348,7 +348,7 @@ class ManagerWorkerContactService {
     ]);
 
     if (_isQualifiedLaborDepartment(department)) {
-      // Show specialty directly — never prefix with the department label
+      // Show specialty directly â€” never prefix with the department label
       String? specialty = _resolveFirstNonEmpty(<String?>[
         (profile['specialty'] as String?)?.trim(),
         (profile['speciality'] as String?)?.trim(),

@@ -9,17 +9,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/intervenant_profile_screen.dart';
-import 'package:stayfix/screens/manager_chat_thread_screen.dart';
-import 'package:stayfix/screens/manager_messages_screen.dart';
-import 'package:stayfix/screens/manager_notifications_screen.dart';
-import 'package:stayfix/screens/manager_offers_screen.dart';
-import 'package:stayfix/screens/manager_property_route_helper.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/manager_worker_contact_service.dart';
-import 'package:stayfix/services/property_scope_service.dart';
-import 'package:stayfix/widgets/unread_messages_nav_item.dart';
+import 'auth_screen.dart';
+import 'intervenant_profile_screen.dart';
+import 'manager_chat_thread_screen.dart';
+import 'manager_messages_screen.dart';
+import 'manager_notifications_screen.dart';
+import 'manager_offers_screen.dart';
+import 'manager_property_route_helper.dart';
+import '../services/app_session_service.dart';
+import '../services/manager_worker_contact_service.dart';
+import '../services/property_scope_service.dart';
+import '../widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // -- Google Maps API key -------------------------------------------------------
@@ -107,7 +107,7 @@ class IntervenantsScreen extends StatefulWidget {
 }
 
 // -------------------------------------------------------------------------------
-// Screen state — UI layer rewritten, data layer intact
+// Screen state â€” UI layer rewritten, data layer intact
 // -------------------------------------------------------------------------------
 class _IntervenantsScreenState extends State<IntervenantsScreen> {
   // -- Data state (unchanged) --
@@ -779,7 +779,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     }
     if (lower.contains('houseman')) return LucideIcons.building;
     if (lower.contains('concierge')) return LucideIcons.key;
-    if (lower.contains('menage') || lower.contains('ménage')) {
+    if (lower.contains('menage') || lower.contains('mÃ©nage')) {
       return LucideIcons.sparkles;
     }
     return LucideIcons.briefcase;
@@ -1138,7 +1138,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
 }
 
 // -------------------------------------------------------------------------------
-// Data layer — completely unchanged
+// Data layer â€” completely unchanged
 // -------------------------------------------------------------------------------
 
 _WorkerItem _workerFromDoc(
@@ -1577,7 +1577,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
               .length >=
           7;
   if (allWeekAlwaysAvailable) {
-    return const ['Tous les jours • Toujours disponible'];
+    return const ['Tous les jours â€¢ Toujours disponible'];
   }
 
   final result = <String>[];
@@ -1586,7 +1586,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     if (_isAlwaysAvailableSlot(slot)) {
       result.add(
         dayLabel.isNotEmpty
-            ? '$dayLabel • Toujours disponible'
+            ? '$dayLabel â€¢ Toujours disponible'
             : 'Toujours disponible',
       );
       continue;
@@ -1604,7 +1604,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     );
     if (from != null && to != null) {
       result.add(
-        dayLabel.isNotEmpty ? '$dayLabel • $from - $to' : '$from - $to',
+        dayLabel.isNotEmpty ? '$dayLabel â€¢ $from - $to' : '$from - $to',
       );
       continue;
     }
@@ -1613,7 +1613,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     if (existingLabel.isNotEmpty) {
       result.add(
         dayLabel.isNotEmpty && !existingLabel.toLowerCase().startsWith(dayLabel)
-            ? '$dayLabel • $existingLabel'
+            ? '$dayLabel â€¢ $existingLabel'
             : existingLabel,
       );
     }
@@ -1780,22 +1780,22 @@ String _normalizeWorkerFilterValue(String? value) {
   return (value ?? '')
       .trim()
       .toLowerCase()
-      .replaceAll('œ', 'oe')
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
-      .replaceAll('ë', 'e')
-      .replaceAll('à', 'a')
-      .replaceAll('â', 'a')
-      .replaceAll('ä', 'a')
-      .replaceAll('î', 'i')
-      .replaceAll('ï', 'i')
-      .replaceAll('ô', 'o')
-      .replaceAll('ö', 'o')
-      .replaceAll('ù', 'u')
-      .replaceAll('û', 'u')
-      .replaceAll('ü', 'u')
-      .replaceAll('ç', 'c')
+      .replaceAll('Å“', 'oe')
+      .replaceAll('Ã©', 'e')
+      .replaceAll('Ã¨', 'e')
+      .replaceAll('Ãª', 'e')
+      .replaceAll('Ã«', 'e')
+      .replaceAll('Ã ', 'a')
+      .replaceAll('Ã¢', 'a')
+      .replaceAll('Ã¤', 'a')
+      .replaceAll('Ã®', 'i')
+      .replaceAll('Ã¯', 'i')
+      .replaceAll('Ã´', 'o')
+      .replaceAll('Ã¶', 'o')
+      .replaceAll('Ã¹', 'u')
+      .replaceAll('Ã»', 'u')
+      .replaceAll('Ã¼', 'u')
+      .replaceAll('Ã§', 'c')
       .replaceAll(RegExp(r'[^a-z0-9]'), '');
 }
 
@@ -1819,26 +1819,26 @@ String _resolveWorkerDepartment({
   required String role,
 }) {
   if (department.isNotEmpty) return department;
-  if (role.contains('Maintenance')) return 'Maintenance générale';
+  if (role.contains('Maintenance')) return 'Maintenance gÃ©nÃ©rale';
   if (role.contains('Houseman')) return 'Houseman';
   if (role.contains('Valet') || role.contains('Femme de chambre')) {
-    return 'Ménage';
+    return 'MÃ©nage';
   }
   if (role.contains('Reception') || role.contains('Concierge')) {
     return 'Concierge';
   }
-  if (role.contains('Superviseur')) return "Main-d'œuvre qualifiée";
-  if (role.contains('Staff')) return "Main-d'œuvre qualifiée";
-  return 'Préposé aux chambres';
+  if (role.contains('Superviseur')) return "Main-d'Å“uvre qualifiÃ©e";
+  if (role.contains('Staff')) return "Main-d'Å“uvre qualifiÃ©e";
+  return 'PrÃ©posÃ© aux chambres';
 }
 
 bool _isQualifiedLaborDepartment(String? department) {
   final normalized = (department ?? '')
       .toLowerCase()
-      .replaceAll('œ', 'oe')
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
+      .replaceAll('Å“', 'oe')
+      .replaceAll('Ã©', 'e')
+      .replaceAll('Ã¨', 'e')
+      .replaceAll('Ãª', 'e')
       .replaceAll(RegExp(r'[^a-z]'), '');
   return normalized.contains('maindoeuvrequalifiee') ||
       normalized.contains('mainoeuvrequalifiee');
@@ -1960,7 +1960,7 @@ Uint8List? _decodeWorkerPhotoBase64(String? rawValue) {
 }
 
 // -------------------------------------------------------------------------------
-// UI Widgets — new dark-gold design
+// UI Widgets â€” new dark-gold design
 // -------------------------------------------------------------------------------
 
 // -- _HeroRoundButton ----------------------------------------------------------
@@ -2417,7 +2417,7 @@ class _CompactWorkerCard extends StatelessWidget {
               const SizedBox(height: 12),
               if (pills.isNotEmpty) ...[
                 Text(
-                  'Disponibilités',
+                  'DisponibilitÃ©s',
                   style: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.40),
                     fontSize: 10,
@@ -2778,7 +2778,7 @@ class _WorkersEmptyCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Aucun intervenant trouvé',
+              'Aucun intervenant trouvÃ©',
               style: GoogleFonts.cormorantGaramond(
                 color: Colors.white,
                 fontSize: 22,
@@ -2788,7 +2788,7 @@ class _WorkersEmptyCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajustez vos filtres pour voir plus de résultats.',
+              'Ajustez vos filtres pour voir plus de rÃ©sultats.',
               style: GoogleFonts.manrope(
                 color: Colors.white.withValues(alpha: 0.90),
                 fontSize: 13,
@@ -2856,7 +2856,7 @@ class _WorkersErrorCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Vérifiez votre connexion puis réessayez.',
+              'VÃ©rifiez votre connexion puis rÃ©essayez.',
               style: GoogleFonts.manrope(
                 color: kWhite70,
                 fontSize: 13,
@@ -2878,7 +2878,7 @@ class _WorkersErrorCard extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'Réessayer',
+                'RÃ©essayer',
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
               ),
             ),
@@ -2890,7 +2890,7 @@ class _WorkersErrorCard extends StatelessWidget {
 }
 
 // -------------------------------------------------------------------------------
-// Filter sheet — completely unchanged
+// Filter sheet â€” completely unchanged
 // -------------------------------------------------------------------------------
 
 class _WorkersFilterSheet extends StatefulWidget {

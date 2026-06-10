@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
-import 'package:stayfix/screens/privacy_account_center_screen.dart';
+import '../providers/hotel_provider.dart';
+import 'privacy_account_center_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -43,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content:
-            Text(success ? "Profil mis à jour !" : "Erreur de mise à jour"),
+            Text(success ? "Profil mis Ã  jour !" : "Erreur de mise Ã  jour"),
         backgroundColor: success ? Colors.green : Colors.red,
       ));
       if (success) Navigator.pop(context);

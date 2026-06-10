@@ -2,11 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/property_scope_service.dart';
-import 'package:stayfix/services/scoped_account_service.dart';
-import 'package:stayfix/services/stayfix_email_service.dart';
+import 'auth_screen.dart';
+import '../services/app_session_service.dart';
+import '../services/property_scope_service.dart';
+import '../services/scoped_account_service.dart';
+import '../services/stayfix_email_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class BuildingManagementScreen extends StatefulWidget {

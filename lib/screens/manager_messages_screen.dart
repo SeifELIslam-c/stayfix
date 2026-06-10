@@ -7,12 +7,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/intervenants_screen.dart';
-import 'package:stayfix/screens/manager_chat_thread_screen.dart';
-import 'package:stayfix/screens/manager_offers_screen.dart';
-import 'package:stayfix/screens/manager_property_route_helper.dart';
-import 'package:stayfix/services/vps_media_service.dart';
+import 'auth_screen.dart';
+import 'intervenants_screen.dart';
+import 'manager_chat_thread_screen.dart';
+import 'manager_offers_screen.dart';
+import 'manager_property_route_helper.dart';
+import '../services/vps_media_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // -- Color constants -----------------------------------------------------------
@@ -227,12 +227,12 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
     String subtitle;
     switch (type) {
       case 'system':
-        subtitle = 'Notification système';
+        subtitle = 'Notification systÃ¨me';
         break;
       case 'team':
         final memberCount = d['memberCount'];
         subtitle =
-            memberCount != null ? 'Groupe · $memberCount membres' : 'Groupe';
+            memberCount != null ? 'Groupe Â· $memberCount membres' : 'Groupe';
         break;
       case 'property':
         subtitle = 'Communication';
@@ -319,7 +319,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
             });
             if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('Utilisateur bloqué.',
+              content: Text('Utilisateur bloquÃ©.',
                   style: GoogleFonts.inter(color: Colors.white)),
               backgroundColor: const Color(0xFF1A1A1A),
               behavior: SnackBarBehavior.floating,
@@ -391,7 +391,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
                   controller: _searchCtrl,
                   onChanged: (v) => setState(() => _searchQuery = v),
                   onFilterTap: () =>
-                      _showSoon('Filtres avancés bientôt disponibles.'),
+                      _showSoon('Filtres avancÃ©s bientÃ´t disponibles.'),
                 ),
               ),
               const SizedBox(height: 14),
@@ -550,7 +550,7 @@ class _ManagerMessagesScreenState extends State<ManagerMessagesScreen> {
 bool _isQualifiedLaborDepartment(String? department) {
   final normalized = (department ?? '')
       .toLowerCase()
-      .replaceAll('œ', 'oe')
+      .replaceAll('Å“', 'oe')
       .replaceAll(RegExp(r'[^a-z]'), '');
   return normalized.contains('maindoeuvrequalifie');
 }
@@ -796,8 +796,8 @@ class _FilterChips extends StatelessWidget {
     final chips = [
       ('tous', LucideIcons.messageCircle, 'Tous'),
       ('intervenants', LucideIcons.user, 'Intervenants'),
-      ('equipe', LucideIcons.users, 'Équipe'),
-      ('systeme', LucideIcons.settings, 'Système'),
+      ('equipe', LucideIcons.users, 'Ã‰quipe'),
+      ('systeme', LucideIcons.settings, 'SystÃ¨me'),
     ];
     return SizedBox(
       height: 40,
@@ -1279,7 +1279,7 @@ class _InitialAvatar extends StatelessWidget {
 }
 
 // -----------------------------------------------------------------------------
-// _SkeletonList — loading placeholder
+// _SkeletonList â€” loading placeholder
 // -----------------------------------------------------------------------------
 
 class _SkeletonList extends StatelessWidget {
@@ -1382,7 +1382,7 @@ class _EmptyConvsState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Vos échanges avec les intervenants\napparaîtront ici.',
+              'Vos Ã©changes avec les intervenants\napparaÃ®tront ici.',
               style: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.60),
                 fontSize: 14,
@@ -1499,7 +1499,7 @@ class _ComposeSheet extends StatelessWidget {
             const SizedBox(height: 10),
             _ComposeOption(
               icon: LucideIcons.users,
-              label: 'Créer un groupe / équipe',
+              label: 'CrÃ©er un groupe / Ã©quipe',
               onTap: onCreateGroup,
             ),
           ],

@@ -1,4 +1,4 @@
-import 'package:stayfix/services/property_scope_service.dart';
+import 'property_scope_service.dart';
 
 class AppSessionService {
   AppSessionService._();

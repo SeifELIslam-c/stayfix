@@ -1,8 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:stayfix/models/hotel_models.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
-import 'package:stayfix/screens/supervisor_dashboard.dart';
+import '../models/hotel_models.dart';
+import '../providers/hotel_provider.dart';
+import 'supervisor_dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -71,7 +71,7 @@ class _RoomListScreenState extends State<RoomListScreen> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.amber))
                   : const Icon(LucideIcons.database, color: Colors.red),
-              tooltip: "Créer les chambres (Seed)",
+              tooltip: "CrÃ©er les chambres (Seed)",
               onPressed: () async {
                 setState(() => _isGenerating = true);
                 await provider.generateDefaultRooms();
@@ -270,7 +270,7 @@ class _FloorExpandableSectionState extends State<FloorExpandableSection> {
   Widget _buildRoomCard(BuildContext context, HotelProvider provider, Room room,
       HotelUser user, bool isDesktop) {
     bool isDirector = user.role == UserRoles.director;
-    bool isReception = user.role.contains('Réception') ||
+    bool isReception = user.role.contains('RÃ©ception') ||
         user.role == UserRoles.receptionManager;
 
     String statusText;
@@ -502,7 +502,7 @@ class _FloorExpandableSectionState extends State<FloorExpandableSection> {
                       keyboardType: TextInputType.number,
                       style: const TextStyle(color: Colors.white, fontSize: 18),
                       decoration: InputDecoration(
-                        hintText: "Numéro (ex: 205)",
+                        hintText: "NumÃ©ro (ex: 205)",
                         hintStyle: TextStyle(color: Colors.grey[600]),
                         prefixIcon:
                             const Icon(LucideIcons.hash, color: Colors.grey),
@@ -528,7 +528,7 @@ class _FloorExpandableSectionState extends State<FloorExpandableSection> {
                           Navigator.pop(ctx);
                         }
                       },
-                      child: const Text("CRÉER LA CHAMBRE",
+                      child: const Text("CRÃ‰ER LA CHAMBRE",
                           style: TextStyle(
                               fontWeight: FontWeight.bold, letterSpacing: 1)),
                     ),
@@ -585,7 +585,7 @@ class _FloorExpandableSectionState extends State<FloorExpandableSection> {
                           child: const Icon(LucideIcons.edit3,
                               color: Colors.white, size: 24)),
                       const SizedBox(width: 16),
-                      const Text("RENOMMER L'ÉTAGE",
+                      const Text("RENOMMER L'Ã‰TAGE",
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,

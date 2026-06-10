@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:stayfix/models/hotel_models.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
-import 'package:stayfix/screens/add_staff_screen.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/profile_screen.dart';
-import 'package:stayfix/screens/supervisor_rooms_screen.dart';
+import '../models/hotel_models.dart';
+import '../providers/hotel_provider.dart';
+import 'add_staff_screen.dart';
+import 'auth_screen.dart';
+import 'profile_screen.dart';
+import 'supervisor_rooms_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -128,7 +128,7 @@ class SupervisorDashboard extends StatelessWidget {
                     _buildModernCard(
                       context,
                       title: "CHECKOUT",
-                      subtitle: "Départs aujourd'hui",
+                      subtitle: "DÃ©parts aujourd'hui",
                       count: checkout,
                       icon: LucideIcons.logOut,
                       color: const Color(0xFFF59E0B),
@@ -137,7 +137,7 @@ class SupervisorDashboard extends StatelessWidget {
                     _buildModernCard(
                       context,
                       title: "VENDU",
-                      subtitle: "Chambres occupées",
+                      subtitle: "Chambres occupÃ©es",
                       count: vendu,
                       icon: LucideIcons.key,
                       color: const Color(0xFFEF4444),
@@ -146,7 +146,7 @@ class SupervisorDashboard extends StatelessWidget {
                     _buildModernCard(
                       context,
                       title: "DISPONIBLES",
-                      subtitle: "Prêtes à vendre",
+                      subtitle: "PrÃªtes Ã  vendre",
                       count: libre,
                       icon: LucideIcons.checkCircle,
                       color: const Color(0xFF10B981),
@@ -154,7 +154,7 @@ class SupervisorDashboard extends StatelessWidget {
                     ),
                     _buildActionCard(
                       context,
-                      title: "GÉRER L'ÉQUIPE",
+                      title: "GÃ‰RER L'Ã‰QUIPE",
                       subtitle: "Ajouter Staff/Superviseur",
                       icon: LucideIcons.userPlus,
                       onTap: () => Navigator.push(

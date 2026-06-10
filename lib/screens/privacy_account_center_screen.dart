@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/services/app_env.dart';
+import '../providers/hotel_provider.dart';
+import 'auth_screen.dart';
+import '../services/app_env.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -727,7 +727,7 @@ class _PrivacyAccountCenterScreenState
               ),
               const SizedBox(height: 14),
               const _LegalSection(
-                title: '1. Donnees collectées',
+                title: '1. Donnees collecteÌes',
                 icon: LucideIcons.shieldCheck,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

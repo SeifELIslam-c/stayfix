@@ -9,13 +9,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/services/manager_unread_service.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/app_env.dart';
-import 'package:stayfix/services/vps_media_service.dart';
+import 'auth_screen.dart';
+import '../services/manager_unread_service.dart';
+import '../services/app_session_service.dart';
+import '../services/app_env.dart';
+import '../services/vps_media_service.dart';
 import 'package:http/http.dart' as http;
-import 'package:stayfix/widgets/google_address_picker_screen.dart';
+import '../widgets/google_address_picker_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -222,7 +222,7 @@ class _ManagerChatThreadScreenState extends State<ManagerChatThreadScreen> {
   final ImagePicker _picker = ImagePicker();
   final AudioRecorder _recorder = AudioRecorder();
 
-  // Cached streams — must not be recreated on setState or the StreamBuilders
+  // Cached streams â€” must not be recreated on setState or the StreamBuilders
   // cancel their subscriptions and briefly show an empty state.
   late final Stream<DocumentSnapshot<Map<String, dynamic>>> _conversationStream;
   late final Stream<QuerySnapshot<Map<String, dynamic>>> _messagesStream;
@@ -5473,10 +5473,10 @@ class _ReactionPointerPainter extends CustomPainter {
 bool _isQualifiedLaborDepartment(String? department) {
   final normalized = (department ?? '')
       .toLowerCase()
-      .replaceAll('œ', 'oe')
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
+      .replaceAll('Å“', 'oe')
+      .replaceAll('Ã©', 'e')
+      .replaceAll('Ã¨', 'e')
+      .replaceAll('Ãª', 'e')
       .replaceAll(RegExp(r'[^a-z]'), '');
   return normalized.contains('maindoeuvrequalifie');
 }
@@ -5526,11 +5526,11 @@ String? _resolveSpecialtyValue(Map<String, dynamic> data) {
 String _buildGroupSubtitle(Map<String, dynamic> data) {
   final memberCount = (data['memberCount'] as num?)?.toInt();
   if (memberCount != null && memberCount > 0) {
-    return 'Groupe · $memberCount membre${memberCount > 1 ? 's' : ''}';
+    return 'Groupe Â· $memberCount membre${memberCount > 1 ? 's' : ''}';
   }
   final participants = ((data['participants'] as List?) ?? const []).length;
   if (participants > 0) {
-    return 'Groupe · $participants membre${participants > 1 ? 's' : ''}';
+    return 'Groupe Â· $participants membre${participants > 1 ? 's' : ''}';
   }
   return 'Groupe';
 }

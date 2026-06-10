@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:stayfix/models/hotel_models.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
+import '../models/hotel_models.dart';
+import '../providers/hotel_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
@@ -57,12 +57,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         return [
           {
             'id': UserRoles.receptionManager,
-            'label': 'Dir. Réception',
+            'label': 'Dir. RÃ©ception',
             'icon': LucideIcons.conciergeBell
           },
           {
             'id': UserRoles.housekeepingManager,
-            'label': 'Dir. Propreté',
+            'label': 'Dir. PropretÃ©',
             'icon': LucideIcons.sparkles
           },
           {
@@ -137,7 +137,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         _selectedManagerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content:
-              Text("Veuillez sélectionner un directeur pour ce superviseur"),
+              Text("Veuillez sÃ©lectionner un directeur pour ce superviseur"),
           backgroundColor: Colors.redAccent));
       return;
     }
@@ -173,7 +173,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text("Membre ajouté avec succès"),
+          content: Text("Membre ajoutÃ© avec succÃ¨s"),
           backgroundColor: Colors.green));
       Navigator.pop(context);
     }
@@ -199,7 +199,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("SÉLECTIONNER LE RÔLE",
+            const Text("SÃ‰LECTIONNER LE RÃ”LE",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -239,13 +239,13 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                     letterSpacing: 1,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            _buildInput("Prénom", _firstNameController, LucideIcons.user),
+            _buildInput("PrÃ©nom", _firstNameController, LucideIcons.user),
             _buildInput("Nom", _lastNameController, LucideIcons.user),
             _buildInput("Email", _emailController, LucideIcons.mail),
-            _buildInput("Téléphone", _phoneController, LucideIcons.phone),
+            _buildInput("TÃ©lÃ©phone", _phoneController, LucideIcons.phone),
 
             const SizedBox(height: 30),
-            const Text("ACCÈS",
+            const Text("ACCÃˆS",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,

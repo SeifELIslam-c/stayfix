@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:stayfix/screens/condo_dashboard_screen.dart';
-import 'package:stayfix/screens/condu_profile_screen.dart';
-import 'package:stayfix/screens/immeuble_dashboard.dart';
-import 'package:stayfix/screens/immeuble_profile_screen.dart';
-import 'package:stayfix/screens/villa_profile_screen.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/property_scope_service.dart';
+import 'condo_dashboard_screen.dart';
+import 'condu_profile_screen.dart';
+import 'immeuble_dashboard.dart';
+import 'immeuble_profile_screen.dart';
+import 'villa_profile_screen.dart';
+import '../services/app_session_service.dart';
+import '../services/property_scope_service.dart';
 
 String resolveCurrentManagerPropertyType() {
   final data = AppSessionService.currentUserData;

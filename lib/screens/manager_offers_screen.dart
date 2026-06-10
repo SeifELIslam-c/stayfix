@@ -4,24 +4,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/intervenants_screen.dart';
-import 'package:stayfix/screens/create_manager_offer_screen.dart';
-import 'package:stayfix/screens/manager_offer_detail_screen.dart';
-import 'package:stayfix/screens/manager_messages_screen.dart';
-import 'package:stayfix/screens/manager_notifications_screen.dart';
-import 'package:stayfix/screens/manager_property_route_helper.dart';
-import 'package:stayfix/services/vps_media_service.dart';
-import 'package:stayfix/widgets/unread_messages_nav_item.dart';
+import 'auth_screen.dart';
+import 'intervenants_screen.dart';
+import 'create_manager_offer_screen.dart';
+import 'manager_offer_detail_screen.dart';
+import 'manager_messages_screen.dart';
+import 'manager_notifications_screen.dart';
+import 'manager_property_route_helper.dart';
+import '../services/vps_media_service.dart';
+import '../widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-// ── Color constants ───────────────────────────────────────────────────────────
+// â”€â”€ Color constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _kOffersBg = Color(0xFF070707);
 const _kOffersCard = Color(0xFF111111);
 const _kOffersBorder = Color(0x33D6A85A);
 const _kSearchBg = Color(0xFF181818);
 
-// ── Data models ───────────────────────────────────────────────────────────────
+// â”€â”€ Data models â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _OfferItem {
   const _OfferItem({
     required this.id,
@@ -177,7 +177,7 @@ String _normalizeManagerOfferStatus(String? raw) {
   }
 }
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// â”€â”€ Main screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 List<String> _collectOfferFileIds(Map<String, dynamic> data) {
   final fileIds = <String>{};
 
@@ -320,7 +320,7 @@ class _ManagerOffersScreenState extends State<ManagerOffersScreen> {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
+// â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _OffersHeader extends StatelessWidget {
   const _OffersHeader({required this.uid});
   final String uid;
@@ -353,7 +353,7 @@ class _OffersHeader extends StatelessWidget {
   }
 }
 
-// ── Manager avatar ─────────────────────────────────────────────────────────────
+// â”€â”€ Manager avatar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _ManagerAvatar extends StatelessWidget {
   const _ManagerAvatar({required this.uid});
   final String uid;
@@ -424,7 +424,7 @@ class _ManagerAvatar extends StatelessWidget {
   }
 }
 
-// ── Bell button ───────────────────────────────────────────────────────────────
+// â”€â”€ Bell button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _BellButton extends StatelessWidget {
   const _BellButton();
 
@@ -470,7 +470,7 @@ class _BellButton extends StatelessWidget {
   }
 }
 
-// ── Segmented tabs ────────────────────────────────────────────────────────────
+// â”€â”€ Segmented tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SegmentedTabs extends StatelessWidget {
   const _SegmentedTabs({required this.active, required this.onSelect});
   final int active;
@@ -544,7 +544,7 @@ class _TabItem extends StatelessWidget {
   }
 }
 
-// ── "Mes offres" tab ──────────────────────────────────────────────────────────
+// â”€â”€ "Mes offres" tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _MesOffresTab extends StatefulWidget {
   const _MesOffresTab({
     required this.uid,
@@ -647,7 +647,7 @@ class _MesOffresTabState extends State<_MesOffresTab> {
   }
 }
 
-// ── Search and filter row ─────────────────────────────────────────────────────
+// â”€â”€ Search and filter row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SearchAndFilter extends StatelessWidget {
   const _SearchAndFilter({
     required this.value,
@@ -711,7 +711,7 @@ class _SearchAndFilter extends StatelessWidget {
   }
 }
 
-// ── Status chips ──────────────────────────────────────────────────────────────
+// â”€â”€ Status chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _StatusChips extends StatelessWidget {
   const _StatusChips({required this.active, required this.onSelect});
   final String active;
@@ -721,8 +721,8 @@ class _StatusChips extends StatelessWidget {
     ('toutes', 'Toutes'),
     ('ouverte', 'Ouvertes'),
     ('en_cours', 'En cours'),
-    ('assignee', 'Assignées'),
-    ('terminee', 'Terminées'),
+    ('assignee', 'AssignÃ©es'),
+    ('terminee', 'TerminÃ©es'),
   ];
 
   @override
@@ -766,7 +766,7 @@ class _StatusChips extends StatelessWidget {
   }
 }
 
-// ── Offer card ────────────────────────────────────────────────────────────────
+// â”€â”€ Offer card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _OfferCard extends StatelessWidget {
   const _OfferCard({
     required this.item,
@@ -798,7 +798,7 @@ class _OfferCard extends StatelessWidget {
       case 'plomberie':
         return 'Plomberie';
       case 'electricite':
-        return 'Électricité';
+        return 'Ã‰lectricitÃ©';
       case 'peinture':
         return 'Peinture';
       case 'menuiserie':
@@ -828,9 +828,9 @@ class _OfferCard extends StatelessWidget {
       case 'en_cours':
         return 'En cours';
       case 'assignee':
-        return 'Assignée';
+        return 'AssignÃ©e';
       case 'terminee':
-        return 'Terminée';
+        return 'TerminÃ©e';
       default:
         return status;
     }
@@ -981,7 +981,7 @@ class _OfferCard extends StatelessWidget {
   }
 }
 
-// ── Offer action sheet ────────────────────────────────────────────────────────
+// â”€â”€ Offer action sheet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _OfferActionSheet extends StatelessWidget {
   const _OfferActionSheet({required this.item});
   final _OfferItem item;
@@ -1044,7 +1044,7 @@ class _OfferActionSheet extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Modification bientôt disponible',
+                          'Modification bientÃ´t disponible',
                           style: GoogleFonts.inter(color: Colors.white),
                         ),
                         backgroundColor: const Color(0xFF1A1A1A),
@@ -1059,7 +1059,7 @@ class _OfferActionSheet extends StatelessWidget {
                 const SizedBox(height: 8),
                 _ActionTile(
                   icon: LucideIcons.trash2,
-                  label: 'Supprimer définitivement',
+                  label: 'Supprimer dÃ©finitivement',
                   color: const Color(0xFFEF4444),
                   onTap: () async {
                     Navigator.pop(context);
@@ -1130,7 +1130,7 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-// ── "Offres des intervenants" tab ─────────────────────────────────────────────
+// â”€â”€ "Offres des intervenants" tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _WorkerOffersTab extends StatefulWidget {
   const _WorkerOffersTab({required this.uid, required this.showSoon});
   final String uid;
@@ -1217,7 +1217,7 @@ class _WorkerOffersTabState extends State<_WorkerOffersTab> {
   }
 }
 
-// ── Create FAB ────────────────────────────────────────────────────────────────
+// â”€â”€ Create FAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _CreateFAB extends StatelessWidget {
   const _CreateFAB({required this.onTap});
   final VoidCallback onTap;
@@ -1246,7 +1246,7 @@ class _CreateFAB extends StatelessWidget {
   }
 }
 
-// ── Empty states ──────────────────────────────────────────────────────────────
+// â”€â”€ Empty states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _EmptyOffersState extends StatelessWidget {
   const _EmptyOffersState({required this.onCreateTap});
   final VoidCallback onCreateTap;
@@ -1272,7 +1272,7 @@ class _EmptyOffersState extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Aucune offre créée',
+              'Aucune offre crÃ©Ã©e',
               style: GoogleFonts.cormorantGaramond(
                 color: Colors.white,
                 fontSize: 22,
@@ -1281,7 +1281,7 @@ class _EmptyOffersState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Créez votre première offre pour trouver\nle bon intervenant.',
+              'CrÃ©ez votre premiÃ¨re offre pour trouver\nle bon intervenant.',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.60),
@@ -1301,7 +1301,7 @@ class _EmptyOffersState extends StatelessWidget {
                 ),
               ),
               child: Text(
-                'Créer une offre',
+                'CrÃ©er une offre',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -1315,7 +1315,7 @@ class _EmptyOffersState extends StatelessWidget {
   }
 }
 
-// ── Skeleton list ─────────────────────────────────────────────────────────────
+// â”€â”€ Skeleton list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SkeletonList extends StatelessWidget {
   const _SkeletonList();
 
@@ -1395,7 +1395,7 @@ class _SkeletonCard extends StatelessWidget {
   }
 }
 
-// ── Bottom nav ────────────────────────────────────────────────────────────────
+// â”€â”€ Bottom nav â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _OffersBottomNav extends StatelessWidget {
   const _OffersBottomNav({
     required this.onAccueil,
@@ -1515,7 +1515,7 @@ class _OffersNavItem extends StatelessWidget {
   }
 }
 
-// ── Worker Offers Tab Widgets ─────────────────────────────────────────────────
+// â”€â”€ Worker Offers Tab Widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 IconData _iconFor(String category) {
   switch (category) {
@@ -1532,7 +1532,7 @@ IconData _iconFor(String category) {
   }
 }
 
-// ── Offer Filter Chips ────────────────────────────────────────────────────────
+// â”€â”€ Offer Filter Chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _OfferFilterChips extends StatelessWidget {
   const _OfferFilterChips({
     required this.active,
@@ -1549,7 +1549,7 @@ class _OfferFilterChips extends StatelessWidget {
     ('chambres', 'Chambres', LucideIcons.bed),
     ('houseman', 'Houseman', LucideIcons.building),
     ('concierge', 'Concierge', LucideIcons.key),
-    ('menage', 'Ménage', LucideIcons.sparkles),
+    ('menage', 'MÃ©nage', LucideIcons.sparkles),
   ];
 
   @override
@@ -1606,7 +1606,7 @@ class _OfferFilterChips extends StatelessWidget {
   }
 }
 
-// ── Worker Offers Body ────────────────────────────────────────────────────────
+// â”€â”€ Worker Offers Body â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _WorkerOffersBody extends StatelessWidget {
   const _WorkerOffersBody({
     required this.items,
@@ -1671,7 +1671,7 @@ class _WorkerOffersBody extends StatelessWidget {
             title: 'Promotions',
             action: 'Voir toutes',
             hasChevron: true,
-            onTap: () => showSoon('Toutes les promotions bientôt disponibles.'),
+            onTap: () => showSoon('Toutes les promotions bientÃ´t disponibles.'),
           ),
           if (promoItems.isEmpty)
             const _EmptyPromoState()
@@ -1680,9 +1680,9 @@ class _WorkerOffersBody extends StatelessWidget {
           const SizedBox(height: 16),
           _SectionRow(
             title: 'Offres disponibles',
-            action: 'Trier ↓',
+            action: 'Trier â†“',
             hasChevron: false,
-            onTap: () => showSoon('Options de tri bientôt disponibles.'),
+            onTap: () => showSoon('Options de tri bientÃ´t disponibles.'),
           ),
           if (regularItems.isEmpty)
             _EmptyRegularOffresState(condoName: condoName)
@@ -1772,19 +1772,19 @@ String _normalizeToken(String? raw) {
   return (raw ?? '')
       .trim()
       .toLowerCase()
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
-      .replaceAll('à', 'a')
-      .replaceAll('ù', 'u')
-      .replaceAll('ô', 'o')
-      .replaceAll('î', 'i');
+      .replaceAll('Ã©', 'e')
+      .replaceAll('Ã¨', 'e')
+      .replaceAll('Ãª', 'e')
+      .replaceAll('Ã ', 'a')
+      .replaceAll('Ã¹', 'u')
+      .replaceAll('Ã´', 'o')
+      .replaceAll('Ã®', 'i');
 }
 
-// ── Promotions Carousel ───────────────────────────────────────────────────────
+// â”€â”€ Promotions Carousel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 bool _isQualifiedLaborDepartment(String? department) {
   final normalized = _normalizeToken(department)
-      .replaceAll('œ', 'oe')
+      .replaceAll('Å“', 'oe')
       .replaceAll("'", '')
       .replaceAll('-', '')
       .replaceAll(RegExp(r'[^a-z]'), '');
@@ -1863,7 +1863,7 @@ class _PromotionsCarouselState extends State<_PromotionsCarousel> {
                   item: widget.items[i],
                   isCenter: isCenter,
                   onTap: () => widget
-                      .showSoon('Détails de l\'offre bientôt disponibles.'),
+                      .showSoon('DÃ©tails de l\'offre bientÃ´t disponibles.'),
                 ),
               );
             },
@@ -1877,7 +1877,7 @@ class _PromotionsCarouselState extends State<_PromotionsCarousel> {
   }
 }
 
-// ── Promo Card ────────────────────────────────────────────────────────────────
+// â”€â”€ Promo Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _PromoCard extends StatelessWidget {
   const _PromoCard({
     required this.item,
@@ -1992,7 +1992,7 @@ class _PromoCard extends StatelessWidget {
                       right: 10,
                       child: _DiscountBadge(percent: item.discountPercent!),
                     ),
-                  // Category circle — overlaps bottom edge
+                  // Category circle â€” overlaps bottom edge
                   Positioned(
                     bottom: -22,
                     left: 0,
@@ -2120,7 +2120,7 @@ class _InitialBg extends StatelessWidget {
   }
 }
 
-// ── Promo Badge ───────────────────────────────────────────────────────────────
+// â”€â”€ Promo Badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _PromoBadge extends StatelessWidget {
   const _PromoBadge({required this.isFeatured});
 
@@ -2158,7 +2158,7 @@ class _PromoBadge extends StatelessWidget {
   }
 }
 
-// ── Discount Badge ────────────────────────────────────────────────────────────
+// â”€â”€ Discount Badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _DiscountBadge extends StatelessWidget {
   const _DiscountBadge({required this.percent});
 
@@ -2184,7 +2184,7 @@ class _DiscountBadge extends StatelessWidget {
   }
 }
 
-// ── Category Circle ───────────────────────────────────────────────────────────
+// â”€â”€ Category Circle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _CategoryCircle extends StatelessWidget {
   const _CategoryCircle({required this.category});
 
@@ -2205,7 +2205,7 @@ class _CategoryCircle extends StatelessWidget {
   }
 }
 
-// ── Page Dots ─────────────────────────────────────────────────────────────────
+// â”€â”€ Page Dots â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _PageDots extends StatelessWidget {
   const _PageDots({required this.count, required this.page});
 
@@ -2233,7 +2233,7 @@ class _PageDots extends StatelessWidget {
   }
 }
 
-// ── Section Row ───────────────────────────────────────────────────────────────
+// â”€â”€ Section Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _SectionRow extends StatelessWidget {
   const _SectionRow({
     required this.title,
@@ -2289,7 +2289,7 @@ class _SectionRow extends StatelessWidget {
   }
 }
 
-// ── Regular Offer Card ────────────────────────────────────────────────────────
+// â”€â”€ Regular Offer Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _RegularOfferCard extends StatelessWidget {
   const _RegularOfferCard({
     required this.item,
@@ -2302,7 +2302,7 @@ class _RegularOfferCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => showSoon('Détails de l\'offre bientôt disponibles.'),
+      onTap: () => showSoon('DÃ©tails de l\'offre bientÃ´t disponibles.'),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -2460,9 +2460,9 @@ class _AvatarInitial extends StatelessWidget {
   }
 }
 
-// ── Bottom Info Card ──────────────────────────────────────────────────────────
+// â”€â”€ Bottom Info Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ── Empty States ──────────────────────────────────────────────────────────────
+// â”€â”€ Empty States â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _EmptyPromoState extends StatelessWidget {
   const _EmptyPromoState();
 

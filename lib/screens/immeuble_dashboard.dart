@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:stayfix/screens/condo_dashboard_screen.dart';
+import 'condo_dashboard_screen.dart';
 
 class ImmeubleDashboardScreen extends StatelessWidget {
   const ImmeubleDashboardScreen({

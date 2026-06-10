@@ -7,10 +7,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/manager_property_route_helper.dart';
-import 'package:stayfix/services/property_scope_service.dart';
-import 'package:stayfix/services/vps_media_service.dart';
+import 'auth_screen.dart';
+import 'manager_property_route_helper.dart';
+import '../services/property_scope_service.dart';
+import '../services/vps_media_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
@@ -55,12 +55,12 @@ const _kDurations = [
   "Moins d'1 heure",
   '1-2 heures',
   '2-4 heures',
-  'Demi-journée',
-  'Journée complète',
-  'À déterminer',
+  'Demi-journÃ©e',
+  'JournÃ©e complÃ¨te',
+  'Ã€ dÃ©terminer',
 ];
 
-const _kUrgencies = ['Faible', 'Normale', 'Urgente', 'Très urgente'];
+const _kUrgencies = ['Faible', 'Normale', 'Urgente', 'TrÃ¨s urgente'];
 
 // -- Main screen ---------------------------------------------------------------
 class CreateManagerOfferScreen extends StatefulWidget {
@@ -324,15 +324,15 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       return;
     }
     if (_descCtrl.text.trim().isEmpty) {
-      _showError('Veuillez décrire le travail à effectuer.');
+      _showError('Veuillez dÃ©crire le travail Ã  effectuer.');
       return;
     }
     if (_department == null) {
-      _showError('Veuillez sélectionner un département.');
+      _showError('Veuillez sÃ©lectionner un dÃ©partement.');
       return;
     }
     if (_specialty == null) {
-      _showError('Veuillez sélectionner une spécialité.');
+      _showError('Veuillez sÃ©lectionner une spÃ©cialitÃ©.');
       return;
     }
     if (_requestedDate == null) {
@@ -346,7 +346,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
     if (!_isNegotiable) {
       final budgetText = _budgetCtrl.text.trim();
       if (budgetText.isEmpty || double.tryParse(budgetText) == null) {
-        _showError('Veuillez indiquer un budget ou activer Négociable.');
+        _showError('Veuillez indiquer un budget ou activer NÃ©gociable.');
         return;
       }
     }
@@ -439,7 +439,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Offre publiée avec succès',
+          content: Text('Offre publiÃ©e avec succÃ¨s',
               style: GoogleFonts.inter(
                   color: Colors.white, fontWeight: FontWeight.w600)),
           backgroundColor: const Color(0xFF22C55E),
@@ -457,7 +457,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       }
       if (mounted) {
         setState(() => _loading = false);
-        _showError('Erreur lors de la publication. Réessayez.');
+        _showError('Erreur lors de la publication. RÃ©essayez.');
       }
     }
   }
@@ -470,7 +470,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
         children: [
           _CreateOfferHeader(
             onBack: () => Navigator.pop(context),
-            onSaveDraft: () => _showSoon('Brouillon bientôt disponible.'),
+            onSaveDraft: () => _showSoon('Brouillon bientÃ´t disponible.'),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -496,14 +496,14 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  const _SectionTitle('Informations générales'),
+                  const _SectionTitle('Informations gÃ©nÃ©rales'),
 
                   // Title
                   _FieldCard(
                     icon: LucideIcons.fileText,
                     label: "Titre de l'offre *",
                     placeholder:
-                        "Ex: Réparation fuite d'eau dans la salle de bain",
+                        "Ex: RÃ©paration fuite d'eau dans la salle de bain",
                     controller: _titleCtrl,
                   ),
                   const SizedBox(height: 12),
@@ -512,17 +512,17 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   _TextAreaCard(controller: _descCtrl),
 
                   const SizedBox(height: 24),
-                  const _SectionTitle('Catégorie & spécialité'),
+                  const _SectionTitle('CatÃ©gorie & spÃ©cialitÃ©'),
 
                   // Department
                   _DropdownCard(
                     icon: LucideIcons.briefcase,
-                    label: 'Département *',
+                    label: 'DÃ©partement *',
                     value: _department,
-                    placeholder: 'Sélectionner un département',
+                    placeholder: 'SÃ©lectionner un dÃ©partement',
                     enabled: true,
                     onTap: () => _pickFromSheet(
-                      'Département',
+                      'DÃ©partement',
                       _kDepartments,
                       _department,
                       (v) => setState(() {
@@ -536,14 +536,14 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   // Specialty
                   _DropdownCard(
                     icon: LucideIcons.settings2,
-                    label: 'Spécialité *',
+                    label: 'SpÃ©cialitÃ© *',
                     value: _specialty,
-                    placeholder: 'Sélectionner une spécialité',
+                    placeholder: 'SÃ©lectionner une spÃ©cialitÃ©',
                     enabled: _department != null,
                     onTap: _department == null
                         ? null
                         : () => _pickFromSheet(
-                              'Spécialité',
+                              'SpÃ©cialitÃ©',
                               _kSpecialties[_department!] ?? [],
                               _specialty,
                               (v) => setState(() => _specialty = v),
@@ -551,7 +551,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  const _SectionTitle("Détails de l'intervention"),
+                  const _SectionTitle("DÃ©tails de l'intervention"),
 
                   // Date + Time
                   Row(
@@ -581,12 +581,12 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                       Expanded(
                         child: _DropdownCard(
                           icon: LucideIcons.clock,
-                          label: 'Durée estimée',
+                          label: 'DurÃ©e estimÃ©e',
                           value: _estimatedDuration,
-                          placeholder: 'Sélectionner',
+                          placeholder: 'SÃ©lectionner',
                           enabled: true,
                           onTap: () => _pickFromSheet(
-                            'Durée estimée',
+                            'DurÃ©e estimÃ©e',
                             _kDurations,
                             _estimatedDuration,
                             (v) => setState(() => _estimatedDuration = v),
@@ -623,7 +623,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
 
                   const SizedBox(height: 24),
                   const _SectionTitle(
-                      'Informations complémentaires (optionnel)'),
+                      'Informations complÃ©mentaires (optionnel)'),
 
                   Row(
                     children: [
@@ -632,7 +632,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                           icon: LucideIcons.image,
                           label: 'Ajouter des photos',
                           onTap: () =>
-                              _showSoon('Ajout de photos bientôt disponible.'),
+                              _showSoon('Ajout de photos bientÃ´t disponible.'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -641,14 +641,14 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                           icon: LucideIcons.fileText,
                           label: 'Ajouter un document',
                           onTap: () => _showSoon(
-                              'Ajout de documents bientôt disponible.'),
+                              'Ajout de documents bientÃ´t disponible.'),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _OptionalCard(
                           icon: LucideIcons.messageSquare,
-                          label: 'Instructions spéciales',
+                          label: 'Instructions spÃ©ciales',
                           onTap: _openInstructions,
                           hasContent: _instructionsCtrl.text.isNotEmpty,
                         ),
@@ -741,7 +741,7 @@ class _CreateOfferHeader extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Créer une offre',
+                    'CrÃ©er une offre',
                     style: GoogleFonts.cormorantGaramond(
                       color: Colors.white,
                       fontSize: 22,
@@ -750,7 +750,7 @@ class _CreateOfferHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Décrivez le travail à effectuer et recevez\ndes propositions d\'intervenants qualifiés.',
+                    'DÃ©crivez le travail Ã  effectuer et recevez\ndes propositions d\'intervenants qualifiÃ©s.',
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -821,7 +821,7 @@ class _CondoBanner extends StatelessWidget {
     }
 
     if (_hasCondo) {
-      // Has condo — show name + address
+      // Has condo â€” show name + address
       return GestureDetector(
         onTap: onTap,
         child: Container(
@@ -887,7 +887,7 @@ class _CondoBanner extends StatelessWidget {
       );
     }
 
-    // No condo — show "Ajoutez votre condo"
+    // No condo â€” show "Ajoutez votre condo"
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       decoration: BoxDecoration(
@@ -923,7 +923,7 @@ class _CondoBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'La localisation aide les intervenants à vous trouver.',
+                  'La localisation aide les intervenants Ã  vous trouver.',
                   style: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 11,
@@ -1115,7 +1115,7 @@ class _TextAreaCardState extends State<_TextAreaCard> {
             inputFormatters: [LengthLimitingTextInputFormatter(500)],
             decoration: InputDecoration(
               hintText:
-                  "Décrivez en détail le travail à effectuer, les tâches, les attentes...",
+                  "DÃ©crivez en dÃ©tail le travail Ã  effectuer, les tÃ¢ches, les attentes...",
               hintStyle: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.30),
                 fontSize: 13,
@@ -1261,7 +1261,7 @@ class _DateCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Date souhaitée *',
+                    'Date souhaitÃ©e *',
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -1323,7 +1323,7 @@ class _TimeCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Heure souhaitée *',
+                    'Heure souhaitÃ©e *',
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -1382,7 +1382,7 @@ class _BudgetCard extends StatelessWidget {
               const Icon(LucideIcons.dollarSign, color: kAuthGold, size: 18),
               const SizedBox(width: 10),
               Text(
-                'Budget proposé',
+                'Budget proposÃ©',
                 style: GoogleFonts.inter(
                   color: Colors.white,
                   fontSize: 14,
@@ -1391,7 +1391,7 @@ class _BudgetCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'Négociable',
+                'NÃ©gociable',
                 style: GoogleFonts.inter(
                   color: Colors.white.withValues(alpha: 0.70),
                   fontSize: 13,
@@ -1475,7 +1475,7 @@ class _BudgetCard extends StatelessWidget {
           if (isNegotiable) ...[
             const SizedBox(height: 10),
             Text(
-              "Laissez le vide ou activez Négociable si le prix est à discuter avec l'intervenant.",
+              "Laissez le vide ou activez NÃ©gociable si le prix est Ã  discuter avec l'intervenant.",
               style: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,
@@ -1857,7 +1857,7 @@ class _InstructionsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Instructions spéciales',
+              'Instructions spÃ©ciales',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 17,
@@ -1879,7 +1879,7 @@ class _InstructionsSheet extends StatelessWidget {
                 style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
                   hintText:
-                      'Précisez toute instruction particulière pour l\'intervenant...',
+                      'PrÃ©cisez toute instruction particuliÃ¨re pour l\'intervenant...',
                   hintStyle: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.35),
                     fontSize: 13,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:stayfix/models/hotel_models.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
+import '../models/hotel_models.dart';
+import '../providers/hotel_provider.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -88,7 +88,7 @@ class _SupervisorRoomsScreenState extends State<SupervisorRoomsScreen> {
                       child: const Icon(LucideIcons.searchX,
                           size: 50, color: Colors.grey)),
                   const SizedBox(height: 20),
-                  Text("Aucune chambre trouvée",
+                  Text("Aucune chambre trouvÃ©e",
                       style: TextStyle(color: Colors.grey[500])),
                 ],
               ),

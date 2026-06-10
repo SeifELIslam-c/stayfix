@@ -6,10 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:stayfix/core/manager_session_guard.dart';
-import 'package:stayfix/models/hotel_models.dart';
-import 'package:stayfix/services/app_session_service.dart';
-import 'package:stayfix/services/property_scope_service.dart';
+import '../core/manager_session_guard.dart';
+import '../models/hotel_models.dart';
+import '../services/app_session_service.dart';
+import '../services/property_scope_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 

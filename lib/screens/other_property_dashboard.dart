@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:stayfix/providers/hotel_provider.dart';
-import 'package:stayfix/screens/auth_screen.dart';
-import 'package:stayfix/screens/director_type_screen.dart';
+import '../providers/hotel_provider.dart';
+import 'auth_screen.dart';
+import 'director_type_screen.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
