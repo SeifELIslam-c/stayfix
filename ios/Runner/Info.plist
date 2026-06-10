@@ -40,6 +40,8 @@
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Stayfix uses your location only while you use address selection and nearby worker search features.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Stayfix may need location access so you can continue using address selection and nearby worker search features whenever iOS requires this permission level.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Stayfix uses the camera so you can capture and send conversation photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
