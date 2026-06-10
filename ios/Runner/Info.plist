@@ -39,9 +39,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Stayfix uses your current location to find nearby agents and show your exact address.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Stayfix uses your location to find nearby agents and show your exact address.</string>
+	<string>Stayfix uses your location only while you use address selection and nearby worker search features.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Stayfix uses the camera so you can capture and send conversation photos.</string>
 	<key>NSMicrophoneUsageDescription</key>
