@@ -27,7 +27,7 @@ const List<ManagerProfileOption> kManagerProfileOptions = [
   ),
   ManagerProfileOption(
     value: 'building_manager',
-    label: 'Immeuble copropriete',
+    label: 'Immeuble en copropriete',
     subtitle: 'Immeubles & résidences',
     icon: LucideIcons.building2,
     opensHotelSelection: false,
@@ -48,7 +48,7 @@ const List<ManagerProfileOption> kManagerProfileOptions = [
   ),
   ManagerProfileOption(
     value: 'apartment_condo_owner',
-    label: 'Propriétaire d’appartement / condo',
+    label: 'Appartement / condo',
     subtitle: 'Appartements & condos',
     icon: LucideIcons.building,
     opensHotelSelection: false,

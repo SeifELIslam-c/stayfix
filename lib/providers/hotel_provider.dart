@@ -5,7 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../core/firebase_options.dart';
 import '../core/manager_session_guard.dart';
 import '../models/hotel_models.dart';
 import '../services/app_session_service.dart';
@@ -52,12 +54,14 @@ class HotelProvider extends ChangeNotifier {
   List<Room> _rooms = [];
 
   bool _isLoading = false;
+  String? _lastAuthErrorMessage;
 
   HotelUser? get currentUser => _currentUser;
   Hotel? get selectedHotel => _selectedHotel;
   List<Hotel> get myHotels => _myHotels;
   List<HotelUser> get hotelStaff => _hotelStaff;
   bool get isLoading => _isLoading;
+  String? get lastAuthErrorMessage => _lastAuthErrorMessage;
 
   List<Room> get rooms {
     final uniqueRoomsMap = {for (var room in _rooms) room.number: room};
@@ -80,6 +84,10 @@ class HotelProvider extends ChangeNotifier {
   void setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  void _setAuthError(String? message) {
+    _lastAuthErrorMessage = message;
   }
 
   // --- Session Management ---
@@ -113,6 +121,7 @@ class HotelProvider extends ChangeNotifier {
 
   Future<bool> login(String input, String password) async {
     try {
+      _setAuthError(null);
       _currentUser = null;
       _selectedHotel = null;
 
@@ -445,9 +454,13 @@ class HotelProvider extends ChangeNotifier {
 
   Future<bool> loginWithGoogle() async {
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn();
+      _setAuthError(null);
+      final GoogleSignIn googleSignIn = _buildGoogleSignIn();
       // Sign out first so the account picker is always shown,
       // even when a previous session is still cached.
+      await googleSignIn
+          .disconnect()
+          .catchError((_) => null);
       await googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return false;
@@ -488,7 +501,12 @@ class HotelProvider extends ChangeNotifier {
       await _saveSession(user.uid);
       listenToMyHotels();
       return true;
+    } on PlatformException catch (e) {
+      _setAuthError(_googlePlatformErrorMessage(e));
+      debugPrint('Google Login Error: $e');
+      return false;
     } catch (e) {
+      _setAuthError('Connexion Google impossible pour le moment.');
       debugPrint('Google Login Error: $e');
       return false;
     }
@@ -501,6 +519,7 @@ class HotelProvider extends ChangeNotifier {
       return false;
     }
     try {
+      _setAuthError(null);
       final OAuthCredential credential = await _buildAppleOAuthCredential();
       final UserCredential userCredential =
           await _auth.signInWithCredential(credential);
@@ -529,7 +548,16 @@ class HotelProvider extends ChangeNotifier {
       await _saveSession(user.uid);
       listenToMyHotels();
       return true;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      _setAuthError(
+        e.code == AuthorizationErrorCode.canceled
+            ? 'Connexion Apple annulee.'
+            : 'Connexion Apple impossible pour le moment.',
+      );
+      debugPrint('Apple Login Error: $e');
+      return false;
     } catch (e) {
+      _setAuthError('Connexion Apple impossible pour le moment.');
       debugPrint('Apple Login Error: $e');
       return false;
     }
@@ -734,7 +762,10 @@ class HotelProvider extends ChangeNotifier {
     }
 
     if (providers.contains('google.com')) {
-      final googleSignIn = GoogleSignIn();
+      final googleSignIn = _buildGoogleSignIn();
+      await googleSignIn
+          .disconnect()
+          .catchError((_) => null);
       await googleSignIn.signOut();
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
@@ -776,6 +807,29 @@ class HotelProvider extends ChangeNotifier {
       idToken: idToken,
       rawNonce: rawNonce,
     );
+  }
+
+  GoogleSignIn _buildGoogleSignIn() {
+    final applePlatforms = defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS;
+    return GoogleSignIn(
+      scopes: const ['email'],
+      clientId:
+          applePlatforms ? DefaultFirebaseOptions.googleIosClientId : null,
+      serverClientId: DefaultFirebaseOptions.googleServerClientId,
+    );
+  }
+
+  String _googlePlatformErrorMessage(PlatformException error) {
+    final details = '${error.code} ${error.message ?? ''}'.toLowerCase();
+    if (details.contains('apiexception: 10') ||
+        details.contains('developer_error')) {
+      return 'Google Sign-In est mal configure pour cette application. Verifiez le client OAuth Android et la cle SHA dans Firebase.';
+    }
+    if (details.contains('network')) {
+      return 'Connexion Google impossible sans internet.';
+    }
+    return 'Connexion Google impossible pour le moment.';
   }
 
   String _extractFirstName(String fullName) {

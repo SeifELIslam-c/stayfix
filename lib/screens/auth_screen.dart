@@ -166,7 +166,10 @@ class _AuthScreenState extends State<AuthScreen> {
     if (success) {
       _navigateToNextScreen();
     } else {
-      showAuthError(context, 'Connexion Google echouee');
+      showAuthError(
+        context,
+        provider.lastAuthErrorMessage ?? 'Connexion Google echouee',
+      );
     }
   }
 
@@ -180,7 +183,10 @@ class _AuthScreenState extends State<AuthScreen> {
     if (success) {
       _navigateToNextScreen();
     } else {
-      showAuthError(context, 'Connexion Apple echouee');
+      showAuthError(
+        context,
+        provider.lastAuthErrorMessage ?? 'Connexion Apple echouee',
+      );
     }
   }
 
@@ -242,7 +248,10 @@ class _AuthScreenState extends State<AuthScreen> {
         (route) => false,
       );
     } else {
-      showAuthError(context, 'Inscription Google echouee');
+      showAuthError(
+        context,
+        provider.lastAuthErrorMessage ?? 'Inscription Google echouee',
+      );
     }
   }
 
@@ -260,7 +269,10 @@ class _AuthScreenState extends State<AuthScreen> {
         (route) => false,
       );
     } else {
-      showAuthError(context, 'Inscription Apple echouee');
+      showAuthError(
+        context,
+        provider.lastAuthErrorMessage ?? 'Inscription Apple echouee',
+      );
     }
   }
 

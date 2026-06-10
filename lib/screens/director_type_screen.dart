@@ -33,7 +33,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
     if (option == null || _isLoading) {
       showAuthError(
         context,
-        'SÃ©lectionnez votre profil pour continuer.',
+        'S\u00e9lectionnez votre profil pour continuer.',
       );
       return;
     }
@@ -72,7 +72,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
       );
     } catch (_) {
       if (mounted) {
-        showAuthError(context, 'Erreur lors de lâ€™enregistrement du profil.');
+        showAuthError(context, "Erreur lors de l'enregistrement du profil.");
       }
     } finally {
       if (mounted) {
@@ -136,9 +136,10 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                       panelHorizontalPadding,
                       mediaQuery.padding.bottom + (isCompact ? 10 : 14),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         Text(
                           'Bienvenue',
                           style: GoogleFonts.cormorantGaramond(
@@ -149,7 +150,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Quel type de bien\ngÃ©rez-vous ?',
+                          'Quel type de bien\ng\u00e9rez-vous ?',
                           style: GoogleFonts.cormorantGaramond(
                             fontSize: titleSize,
                             fontWeight: FontWeight.w700,
@@ -159,7 +160,7 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'SÃ©lectionnez votre profil pour personnaliser votre espace de gestion.',
+                          'S\u00e9lectionnez votre profil pour personnaliser votre espace de gestion.',
                           style: GoogleFonts.manrope(
                             fontSize: isCompact ? 14 : 15.5,
                             fontWeight: FontWeight.w500,
@@ -180,12 +181,9 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                           isLoading: _isLoading,
                         ),
                         SizedBox(height: innerGap),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                                     Expanded(
                                       child: _GridRoleCard(
                                         option: kManagerProfileOptions[1],
@@ -211,13 +209,12 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                                         isLoading: _isLoading,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: innerGap),
-                              Expanded(
-                                child: Row(
-                                  children: [
+                          ],
+                        ),
+                        SizedBox(height: innerGap),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                                     Expanded(
                                       child: _GridRoleCard(
                                         option: kManagerProfileOptions[3],
@@ -243,13 +240,10 @@ class _DirectorTypeScreenState extends State<DirectorTypeScreen> {
                                         isLoading: _isLoading,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                          ],
                         ),
                       ],
+                      ),
                     ),
                   ),
                 ),
@@ -363,7 +357,7 @@ class _FeaturedRoleCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       option.subtitle,
-                      maxLines: 2,
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.manrope(
                         color: Colors.white.withValues(alpha: 0.76),
@@ -421,6 +415,7 @@ class _GridRoleCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,37 +433,34 @@ class _GridRoleCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: compact ? 6 : 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                   Text(
                     option.label,
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.manrope(
                       color: Colors.white,
-                      fontSize: compact ? 12.8 : 14.2,
+                      fontSize: compact ? 12.6 : 14.0,
                       fontWeight: FontWeight.w700,
                       height: 1.14,
                     ),
                   ),
                   SizedBox(height: compact ? 4 : 6),
-                  Text(
-                    option.subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(
-                      color: Colors.white.withValues(alpha: 0.72),
-                      fontSize: compact ? 10.8 : 11.8,
+                Text(
+                  option.subtitle,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.manrope(
+                    color: Colors.white.withValues(alpha: 0.72),
+                      fontSize: compact ? 10.6 : 11.6,
                       fontWeight: FontWeight.w500,
-                      height: 1.22,
+                      height: 1.24,
                     ),
                   ),
                 ],
               ),
-            ),
           ],
         ),
       ),
@@ -500,6 +492,7 @@ class _RoleCardShell extends StatelessWidget {
         borderRadius: BorderRadius.circular(borderRadius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
+          constraints: const BoxConstraints(minHeight: 156),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(borderRadius),
             gradient: const LinearGradient(

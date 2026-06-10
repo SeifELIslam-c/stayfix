@@ -48,6 +48,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
   bool get _requiresPassword =>
       _provider.currentAuthProviders.contains('password');
+  bool get _usesGoogleAuth =>
+      _provider.currentAuthProviders.contains('google.com');
+  bool get _usesAppleAuth =>
+      _provider.currentAuthProviders.contains('apple.com');
+  bool get _usesSocialReauth =>
+      !_requiresPassword && (_usesGoogleAuth || _usesAppleAuth);
+  String get _socialProviderLabel => _usesAppleAuth ? 'Apple' : 'Google';
 
   bool get _canSubmit {
     final confirmed = _confirmationController.text.trim().toUpperCase() ==
@@ -67,135 +74,79 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   Future<void> _pickReason() async {
     final currentIndex = _deleteAccountReasons.indexOf(_selectedReason);
     final initialIndex = currentIndex < 0 ? 0 : currentIndex;
-    final platform = Theme.of(context).platform;
-    final isApple =
-        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
-
-    if (isApple) {
-      var tempIndex = initialIndex;
-      final selected = await showCupertinoModalPopup<String>(
-        context: context,
-        builder: (popupContext) {
-          return Container(
-            height: 320,
-            padding: const EdgeInsets.only(top: 14),
-            decoration: const BoxDecoration(
-              color: Color(0xFF101010),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => Navigator.of(popupContext).pop(),
-                        child: const Text('Annuler'),
-                      ),
-                      Text(
-                        'Motif',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        onPressed: () => Navigator.of(popupContext)
-                            .pop(_deleteAccountReasons[tempIndex]),
-                        child: const Text('Valider'),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: CupertinoPicker(
-                    itemExtent: 46,
-                    scrollController: FixedExtentScrollController(
-                      initialItem: initialIndex,
-                    ),
-                    onSelectedItemChanged: (index) => tempIndex = index,
-                    children: _deleteAccountReasons
-                        .map(
-                          (reason) => Center(
-                            child: Text(
-                              reason,
-                              style: GoogleFonts.inter(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-      if (selected != null && mounted) {
-        setState(() => _selectedReason = selected);
-      }
-      return;
-    }
-
-    final selected = await showModalBottomSheet<String>(
+    var tempIndex = initialIndex;
+    final selected = await showCupertinoModalPopup<String>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
+      builder: (popupContext) {
         return Container(
+          height: 340,
+          padding: const EdgeInsets.only(top: 14),
           decoration: const BoxDecoration(
-            color: _legalCard,
+            color: Color(0xFF101010),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(999),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.of(popupContext).pop(),
+                      child: const Text('Annuler'),
+                    ),
+                    Text(
+                      'Motif',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.of(popupContext)
+                          .pop(_deleteAccountReasons[tempIndex]),
+                      child: const Text('Valider'),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 18),
-              Text(
-                'Pourquoi souhaitez-vous supprimer votre compte ?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 14),
-              ..._deleteAccountReasons.map(
-                (reason) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    reason,
-                    style: GoogleFonts.inter(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontWeight: FontWeight.w600,
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 48,
+                  diameterRatio: 1.12,
+                  useMagnifier: true,
+                  magnification: 1.05,
+                  backgroundColor: const Color(0xFF101010),
+                  scrollController: FixedExtentScrollController(
+                    initialItem: initialIndex,
+                  ),
+                  onSelectedItemChanged: (index) => tempIndex = index,
+                  selectionOverlay: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0x33D6A85A)),
+                      color: const Color(0x10D6A85A),
                     ),
                   ),
-                  trailing: _selectedReason == reason
-                      ? const Icon(
-                          LucideIcons.check,
-                          color: Color(0xFFD6A85A),
-                          size: 18,
-                        )
-                      : null,
-                  onTap: () => Navigator.of(sheetContext).pop(reason),
+                  children: _deleteAccountReasons
+                      .map(
+                        (reason) => Center(
+                          child: Text(
+                            reason,
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
               ),
             ],
@@ -552,6 +503,38 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
+                if (_usesSocialReauth) ...[
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF171717),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _legalBorder),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          LucideIcons.shieldCheck,
+                          color: Color(0xFFD6A85A),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'En continuant, Stayfix rouvrira $_socialProviderLabel pour vous demander de choisir a nouveau votre compte avant la suppression.',
+                            style: GoogleFonts.inter(
+                              color: Colors.white.withValues(alpha: 0.82),
+                              height: 1.45,
+                              fontSize: 13.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _DialogInput(
                   controller: _confirmationController,
                   label: 'Tapez DELETE pour confirmer',
@@ -587,7 +570,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               label: Text(
                 _isSubmitting
                     ? 'Suppression en cours...'
-                    : 'Supprimer definitivement mon compte',
+                    : _usesSocialReauth
+                        ? 'Continuer avec $_socialProviderLabel'
+                        : 'Supprimer definitivement mon compte',
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
@@ -727,7 +712,7 @@ class _PrivacyAccountCenterScreenState
               ),
               const SizedBox(height: 14),
               const _LegalSection(
-                title: '1. Donnees collecteÌes',
+                title: '1. Donn\u00e9es collect\u00e9es',
                 icon: LucideIcons.shieldCheck,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

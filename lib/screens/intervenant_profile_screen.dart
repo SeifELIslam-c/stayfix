@@ -177,7 +177,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
     final phone = (_data?['phone'] as String?)?.trim();
     final email = (_data?['email'] as String?)?.trim();
     if ((phone == null || phone.isEmpty) && (email == null || email.isEmpty)) {
-      _showSnack('CoordonnÃ©es non renseignÃ©es');
+      _showSnack('Coordonn\u00e9es non renseign\u00e9es');
       return;
     }
     showModalBottomSheet(
@@ -457,7 +457,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
 
   Widget _buildContent() {
     final data = _data!;
-    final name = ((data['username'] as String?)?.trim()) ?? 'Non renseignÃ©';
+    final name = ((data['username'] as String?)?.trim()) ?? 'Non renseign\u00e9';
     final department = ((data['department'] as String?)?.trim()) ?? '';
     final directSpecialty = ((data['specialty'] as String?)?.trim()) ??
         ((data['speciality'] as String?)?.trim()) ??
@@ -582,7 +582,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
               _InfoRow(
                   label: 'Email', value: (data['email'] as String?)?.trim()),
               _InfoRow(
-                  label: 'TÃ©lÃ©phone',
+                  label: 'T\u00e9l\u00e9phone',
                   value: (data['phone'] as String?)?.trim()),
               _InfoRow(
                   label: 'Adresse', value: address.isNotEmpty ? address : null),
@@ -607,13 +607,13 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
             rows: [
               _InfoRow(
                 label: _isQualifiedLaborDepartment(department)
-                    ? 'SpÃ©cialitÃ©'
-                    : 'DÃ©partement',
+                    ? 'Sp\u00e9cialit\u00e9'
+                    : 'D\u00e9partement',
                 value: displayRole.isNotEmpty ? displayRole : null,
               ),
               if (expYears != null)
                 _InfoRow(
-                    label: 'ExpÃ©rience',
+                    label: 'Exp\u00e9rience',
                     value: '$expYears an${expYears > 1 ? "s" : ""}'),
               _InfoRow(
                   label: 'Poste actuel',
@@ -622,7 +622,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
                   label: 'Lieu de travail',
                   value: (data['jobAddress'] as String?)?.trim()),
               _InfoRow(
-                  label: 'Date de dÃ©but',
+                  label: 'Date de d\u00e9but',
                   value: (data['jobStartDate'] as String?)?.trim(),
                   isLast: !showSpecialtiesSection),
             ],
@@ -633,7 +633,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'SpÃ©cialitÃ©s',
+                          'Sp\u00e9cialit\u00e9s',
                           style: GoogleFonts.inter(
                             color: Colors.white.withValues(alpha: 0.45),
                             fontSize: 12,
@@ -698,7 +698,7 @@ class _IntervenantProfileScreenState extends State<IntervenantProfileScreen> {
                       ),
                     )
                 : null,
-            onDownload: () => _showSnack('TÃ©lÃ©chargement bientÃ´t disponible.'),
+            onDownload: () => _showSnack('T\u00e9l\u00e9chargement bient\u00f4t disponible.'),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -1202,7 +1202,7 @@ class _InfoRow extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  (value?.isNotEmpty == true) ? value! : 'Non renseignÃ©',
+                  (value?.isNotEmpty == true) ? value! : 'Non renseign\u00e9',
                   textAlign: TextAlign.right,
                   style: GoogleFonts.inter(
                     color: (value?.isNotEmpty == true)
@@ -1286,7 +1286,7 @@ class _AvailabilityCard extends StatelessWidget {
                 const Icon(LucideIcons.clock, color: kAuthGold, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'DisponibilitÃ©s',
+                  'Disponibilit\u00e9s',
                   style: GoogleFonts.inter(
                     color: kAuthGold,
                     fontSize: 14,
@@ -1314,7 +1314,7 @@ class _AvailabilityCard extends StatelessWidget {
                 thickness: 1),
             const SizedBox(height: 10),
             if (slots.isEmpty)
-              const _EmptyState(label: 'DisponibilitÃ©s non renseignÃ©es')
+              const _EmptyState(label: 'Disponibilit\u00e9s non renseign\u00e9es')
             else
               Wrap(
                 spacing: 6,
@@ -1441,10 +1441,10 @@ class _LanguagesCard extends StatelessWidget {
                 thickness: 1),
             const SizedBox(height: 8),
             if (!hasAny)
-              const _EmptyState(label: 'Langues non renseignÃ©es')
+              const _EmptyState(label: 'Langues non renseign\u00e9es')
             else ...[
               if (speaksFrench)
-                _LangRow(language: 'FranÃ§ais', isLast: !speaksEnglish),
+                _LangRow(language: 'Fran\u00e7ais', isLast: !speaksEnglish),
               if (speaksEnglish)
                 const _LangRow(language: 'Anglais', isLast: true),
             ],
@@ -1524,7 +1524,7 @@ class _VerificationsCard extends StatelessWidget {
     final rows = <Widget>[
       if (authorizedCanada != null)
         _VerifRow(
-          label: 'AutorisÃ© Ã  travailler au Canada',
+          label: 'Autoris\u00e9 \u00e0 travailler au Canada',
           value: authorizedCanada,
         ),
       if (isAdult != null)
@@ -1532,14 +1532,14 @@ class _VerificationsCard extends StatelessWidget {
       if (noCriminal != null)
         _VerifRow(label: 'Aucun casier judiciaire', value: noCriminal),
       if (referred != null)
-        _VerifRow(label: 'RÃ©fÃ©rÃ© par un employÃ©', value: referred),
+        _VerifRow(label: 'R\u00e9f\u00e9r\u00e9 par un employ\u00e9', value: referred),
       _VerifRow(
-        label: 'Autorisation de rÃ©vision CV',
+        label: 'Autorisation de r\u00e9vision CV',
         value: cvReviewAuth,
         isLast: !showReferralId,
       ),
       if (showReferralId)
-        _VerifRow(label: 'ID du rÃ©fÃ©rent', valueText: referralId, isLast: true),
+        _VerifRow(label: 'ID du r\u00e9f\u00e9rent', valueText: referralId, isLast: true),
     ];
 
     return Container(
@@ -1561,7 +1561,7 @@ class _VerificationsCard extends StatelessWidget {
                 const Icon(LucideIcons.shieldCheck, color: kAuthGold, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'VÃ©rifications',
+                  'V\u00e9rifications',
                   style: GoogleFonts.inter(
                     color: kAuthGold,
                     fontSize: 14,
@@ -1589,7 +1589,7 @@ class _VerificationsCard extends StatelessWidget {
                 thickness: 1),
             const SizedBox(height: 8),
             if (rows.isEmpty)
-              const _EmptyState(label: 'Aucune vÃ©rification renseignÃ©e.')
+              const _EmptyState(label: 'Aucune v\u00e9rification renseign\u00e9e.')
             else
               ...rows,
           ],
@@ -1743,7 +1743,7 @@ class _CvCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _GoldButton(
-                  label: 'TÃ©lÃ©charger',
+                  label: 'T\u00e9l\u00e9charger',
                   icon: LucideIcons.download,
                   onTap: onDownload,
                 ),
@@ -1870,7 +1870,7 @@ class _CvWarningState extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Le candidat n\'a pas autorisÃ© la rÃ©vision de son CV.',
+              "Le candidat n'a pas autoris\u00e9 la r\u00e9vision de son CV.",
               style: GoogleFonts.inter(
                 color: Colors.orange.withValues(alpha: 0.85),
                 fontSize: 13,
@@ -2049,7 +2049,7 @@ class _ContactSheet extends StatelessWidget {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Text(
-          '$label copiÃ©',
+          '\$label copi\u00e9',
           style: GoogleFonts.inter(
               color: Colors.white, fontWeight: FontWeight.w500),
         ),
@@ -2094,9 +2094,9 @@ class _ContactSheet extends StatelessWidget {
           if (phone != null && phone!.isNotEmpty)
             _ContactRow(
               icon: LucideIcons.phone,
-              label: 'TÃ©lÃ©phone',
+              label: 'T\u00e9l\u00e9phone',
               value: phone!,
-              onTap: () => _copy(context, phone!, 'TÃ©lÃ©phone'),
+              onTap: () => _copy(context, phone!, 'T\u00e9l\u00e9phone'),
             ),
           if (phone != null &&
               phone!.isNotEmpty &&

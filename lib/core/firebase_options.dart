@@ -3,6 +3,11 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
+  static const String googleServerClientId =
+      '1084030875192-3mnalpia37tp1kjfdtqi13h1v3d4t3kk.apps.googleusercontent.com';
+  static const String googleIosClientId =
+      '1084030875192-fbos8i5sujd887h3bdbg64vke7c86i26.apps.googleusercontent.com';
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
