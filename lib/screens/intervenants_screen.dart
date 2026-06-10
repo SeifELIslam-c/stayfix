@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 import 'dart:developer' as developer;
 
@@ -9,23 +9,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/intervenant_profile_screen.dart';
-import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
-import 'package:hotel_lux_os/screens/manager_messages_screen.dart';
-import 'package:hotel_lux_os/screens/manager_notifications_screen.dart';
-import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
-import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
-import 'package:hotel_lux_os/services/app_session_service.dart';
-import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
-import 'package:hotel_lux_os/services/property_scope_service.dart';
-import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/intervenant_profile_screen.dart';
+import 'package:stayfix/screens/manager_chat_thread_screen.dart';
+import 'package:stayfix/screens/manager_messages_screen.dart';
+import 'package:stayfix/screens/manager_notifications_screen.dart';
+import 'package:stayfix/screens/manager_offers_screen.dart';
+import 'package:stayfix/screens/manager_property_route_helper.dart';
+import 'package:stayfix/services/app_session_service.dart';
+import 'package:stayfix/services/manager_worker_contact_service.dart';
+import 'package:stayfix/services/property_scope_service.dart';
+import 'package:stayfix/widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-// ── Google Maps API key ───────────────────────────────────────────────────────
+// -- Google Maps API key -------------------------------------------------------
 const _kFallbackMapsKey = '';
 
-// ── Dark-gold UI constants ────────────────────────────────────────────────────
+// -- Dark-gold UI constants ----------------------------------------------------
 const kDarkCard = Color(0xFF141414);
 const kDarkBorder = Color(0xFF252525);
 const kWhite70 = Color(0xB3FFFFFF);
@@ -39,7 +39,7 @@ const List<String> _kAllWorkerDepartments = <String>[
 ];
 final Map<String, _LatLng?> _geocodeCache = <String, _LatLng?>{};
 
-// ── Sort enum (unchanged) ─────────────────────────────────────────────────────
+// -- Sort enum (unchanged) -----------------------------------------------------
 enum WorkerSortBy {
   relevance('Pertinence'),
   distance('Distance'),
@@ -51,7 +51,7 @@ enum WorkerSortBy {
   final String label;
 }
 
-// ── Filter state (unchanged) ──────────────────────────────────────────────────
+// -- Filter state (unchanged) --------------------------------------------------
 class WorkerFilterState {
   const WorkerFilterState({
     this.department,
@@ -98,7 +98,7 @@ class WorkerFilterState {
   }
 }
 
-// ── Screen widget (unchanged) ─────────────────────────────────────────────────
+// -- Screen widget (unchanged) -------------------------------------------------
 class IntervenantsScreen extends StatefulWidget {
   const IntervenantsScreen({super.key});
 
@@ -106,16 +106,16 @@ class IntervenantsScreen extends StatefulWidget {
   State<IntervenantsScreen> createState() => _IntervenantsScreenState();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Screen state — UI layer rewritten, data layer intact
-// ═══════════════════════════════════════════════════════════════════════════════
+// -------------------------------------------------------------------------------
+// Screen state � UI layer rewritten, data layer intact
+// -------------------------------------------------------------------------------
 class _IntervenantsScreenState extends State<IntervenantsScreen> {
-  // ── Data state (unchanged) ──
+  // -- Data state (unchanged) --
   final WorkerSortBy _sortBy = WorkerSortBy.relevance;
   WorkerFilterState _filters = const WorkerFilterState();
   Future<_WorkersPageData>? _workersFuture;
 
-  // ── New UI state ──
+  // -- New UI state --
   String? _selectedDepartment;
   String? _expandedWorkerId;
   double _radiusKm = 12.0;
@@ -167,9 +167,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     } catch (_) {}
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
   // Data loading (unchanged)
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   Future<_WorkersPageData> _loadData(String uid) async {
     final mapsKey = await _readMapsKey();
@@ -565,9 +565,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
   // Build
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -591,7 +591,7 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
 
           return Column(
             children: [
-              // ── Hero ────────────────────────────────────────────────────
+              // -- Hero ----------------------------------------------------
               SizedBox(
                 height: heroHeight,
                 child: Stack(
@@ -707,16 +707,16 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
                 ),
               ),
 
-              // ── Department chips ─────────────────────────────────────────
+              // -- Department chips -----------------------------------------
               SizedBox(
                 height: 60,
                 child: _buildDepartmentChips(data),
               ),
 
-              // ── Filter block ─────────────────────────────────────────────
+              // -- Filter block ---------------------------------------------
               _buildFilterBlock(data),
 
-              // ── Worker list ──────────────────────────────────────────────
+              // -- Worker list ----------------------------------------------
               Expanded(
                 child: _buildWorkerList(workers, isLoading, hasError, data),
               ),
@@ -727,9 +727,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
   // Department chips
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   Widget _buildDepartmentChips(_WorkersPageData? data) {
     final departments = data?.departments ?? const [];
@@ -779,15 +779,15 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     }
     if (lower.contains('houseman')) return LucideIcons.building;
     if (lower.contains('concierge')) return LucideIcons.key;
-    if (lower.contains('menage') || lower.contains('ménage')) {
+    if (lower.contains('menage') || lower.contains('m�nage')) {
       return LucideIcons.sparkles;
     }
     return LucideIcons.briefcase;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
   // Filter block
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   Widget _buildFilterBlock(_WorkersPageData? data) {
     final managerAddress = _managerAddressOverride ??
@@ -1007,9 +1007,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
   // Worker list
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   Widget _buildWorkerList(
     List<_WorkerItem> workers,
@@ -1064,9 +1064,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
   // Bottom nav bar
-  // ─────────────────────────────────────────────────────────────────────────────
+  // -----------------------------------------------------------------------------
 
   Widget _buildBottomNavBar() {
     return SafeArea(
@@ -1137,9 +1137,9 @@ class _IntervenantsScreenState extends State<IntervenantsScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Data layer — completely unchanged
-// ═══════════════════════════════════════════════════════════════════════════════
+// -------------------------------------------------------------------------------
+// Data layer � completely unchanged
+// -------------------------------------------------------------------------------
 
 _WorkerItem _workerFromDoc(
   QueryDocumentSnapshot<Map<String, dynamic>> doc, {
@@ -1577,7 +1577,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
               .length >=
           7;
   if (allWeekAlwaysAvailable) {
-    return const ['Tous les jours • Toujours disponible'];
+    return const ['Tous les jours � Toujours disponible'];
   }
 
   final result = <String>[];
@@ -1586,7 +1586,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     if (_isAlwaysAvailableSlot(slot)) {
       result.add(
         dayLabel.isNotEmpty
-            ? '$dayLabel • Toujours disponible'
+            ? '$dayLabel � Toujours disponible'
             : 'Toujours disponible',
       );
       continue;
@@ -1604,7 +1604,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     );
     if (from != null && to != null) {
       result.add(
-        dayLabel.isNotEmpty ? '$dayLabel • $from - $to' : '$from - $to',
+        dayLabel.isNotEmpty ? '$dayLabel � $from - $to' : '$from - $to',
       );
       continue;
     }
@@ -1613,7 +1613,7 @@ List<String> _parseAvailabilitySlots(Map<String, dynamic> data) {
     if (existingLabel.isNotEmpty) {
       result.add(
         dayLabel.isNotEmpty && !existingLabel.toLowerCase().startsWith(dayLabel)
-            ? '$dayLabel • $existingLabel'
+            ? '$dayLabel � $existingLabel'
             : existingLabel,
       );
     }
@@ -1653,7 +1653,7 @@ String? _formatAvailabilityTime({
   return '$normalizedHour:${normalizedMinute.toString().padLeft(2, '0')}$suffix';
 }
 
-// ── Geocoding ─────────────────────────────────────────────────────────────────
+// -- Geocoding -----------------------------------------------------------------
 
 class _LatLng {
   const _LatLng(this.lat, this.lng);
@@ -1780,22 +1780,22 @@ String _normalizeWorkerFilterValue(String? value) {
   return (value ?? '')
       .trim()
       .toLowerCase()
-      .replaceAll('œ', 'oe')
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
-      .replaceAll('ë', 'e')
-      .replaceAll('à', 'a')
-      .replaceAll('â', 'a')
-      .replaceAll('ä', 'a')
-      .replaceAll('î', 'i')
-      .replaceAll('ï', 'i')
-      .replaceAll('ô', 'o')
-      .replaceAll('ö', 'o')
-      .replaceAll('ù', 'u')
-      .replaceAll('û', 'u')
-      .replaceAll('ü', 'u')
-      .replaceAll('ç', 'c')
+      .replaceAll('�', 'oe')
+      .replaceAll('�', 'e')
+      .replaceAll('�', 'e')
+      .replaceAll('�', 'e')
+      .replaceAll('�', 'e')
+      .replaceAll('�', 'a')
+      .replaceAll('�', 'a')
+      .replaceAll('�', 'a')
+      .replaceAll('�', 'i')
+      .replaceAll('�', 'i')
+      .replaceAll('�', 'o')
+      .replaceAll('�', 'o')
+      .replaceAll('�', 'u')
+      .replaceAll('�', 'u')
+      .replaceAll('�', 'u')
+      .replaceAll('�', 'c')
       .replaceAll(RegExp(r'[^a-z0-9]'), '');
 }
 
@@ -1819,26 +1819,26 @@ String _resolveWorkerDepartment({
   required String role,
 }) {
   if (department.isNotEmpty) return department;
-  if (role.contains('Maintenance')) return 'Maintenance générale';
+  if (role.contains('Maintenance')) return 'Maintenance g�n�rale';
   if (role.contains('Houseman')) return 'Houseman';
   if (role.contains('Valet') || role.contains('Femme de chambre')) {
-    return 'Ménage';
+    return 'M�nage';
   }
   if (role.contains('Reception') || role.contains('Concierge')) {
     return 'Concierge';
   }
-  if (role.contains('Superviseur')) return "Main-d'œuvre qualifiée";
-  if (role.contains('Staff')) return "Main-d'œuvre qualifiée";
-  return 'Préposé aux chambres';
+  if (role.contains('Superviseur')) return "Main-d'�uvre qualifi�e";
+  if (role.contains('Staff')) return "Main-d'�uvre qualifi�e";
+  return 'Pr�pos� aux chambres';
 }
 
 bool _isQualifiedLaborDepartment(String? department) {
   final normalized = (department ?? '')
       .toLowerCase()
-      .replaceAll('œ', 'oe')
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
+      .replaceAll('�', 'oe')
+      .replaceAll('�', 'e')
+      .replaceAll('�', 'e')
+      .replaceAll('�', 'e')
       .replaceAll(RegExp(r'[^a-z]'), '');
   return normalized.contains('maindoeuvrequalifiee') ||
       normalized.contains('mainoeuvrequalifiee');
@@ -1869,7 +1869,7 @@ String _workerInitials(String name) {
       .toUpperCase();
 }
 
-// ── Data models (unchanged) ────────────────────────────────────────────────────
+// -- Data models (unchanged) ----------------------------------------------------
 
 class _WorkersPageData {
   const _WorkersPageData({
@@ -1959,11 +1959,11 @@ Uint8List? _decodeWorkerPhotoBase64(String? rawValue) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// UI Widgets — new dark-gold design
-// ═══════════════════════════════════════════════════════════════════════════════
+// -------------------------------------------------------------------------------
+// UI Widgets � new dark-gold design
+// -------------------------------------------------------------------------------
 
-// ── _HeroRoundButton ──────────────────────────────────────────────────────────
+// -- _HeroRoundButton ----------------------------------------------------------
 class _HeroRoundButton extends StatelessWidget {
   const _HeroRoundButton({
     required this.icon,
@@ -1994,7 +1994,7 @@ class _HeroRoundButton extends StatelessWidget {
   }
 }
 
-// ── _DepartmentChip ───────────────────────────────────────────────────────────
+// -- _DepartmentChip -----------------------------------------------------------
 class _DepartmentChip extends StatelessWidget {
   const _DepartmentChip({
     required this.label,
@@ -2060,7 +2060,7 @@ class _DepartmentChip extends StatelessWidget {
   }
 }
 
-// ── _CompactWorkerAvatar ──────────────────────────────────────────────────────
+// -- _CompactWorkerAvatar ------------------------------------------------------
 class _CompactWorkerAvatar extends StatelessWidget {
   const _CompactWorkerAvatar({required this.worker});
 
@@ -2172,7 +2172,7 @@ class _AvatarInitials extends StatelessWidget {
   }
 }
 
-// ── _MetaChip ─────────────────────────────────────────────────────────────────
+// -- _MetaChip -----------------------------------------------------------------
 class _MetaChip extends StatelessWidget {
   const _MetaChip({
     required this.icon,
@@ -2204,7 +2204,7 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-// ── _MetaSeparator ────────────────────────────────────────────────────────────
+// -- _MetaSeparator ------------------------------------------------------------
 class _MetaSeparator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -2222,7 +2222,7 @@ class _MetaSeparator extends StatelessWidget {
   }
 }
 
-// ── _AvailabilitySlotPill ─────────────────────────────────────────────────────
+// -- _AvailabilitySlotPill -----------------------------------------------------
 class _AvailabilitySlotPill extends StatelessWidget {
   const _AvailabilitySlotPill({
     required this.label,
@@ -2270,7 +2270,7 @@ class _AvailabilitySlotPill extends StatelessWidget {
   }
 }
 
-// ── _CompactWorkerCard ────────────────────────────────────────────────────────
+// -- _CompactWorkerCard --------------------------------------------------------
 class _CompactWorkerCard extends StatelessWidget {
   const _CompactWorkerCard({
     required this.worker,
@@ -2328,7 +2328,7 @@ class _CompactWorkerCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Header row ──────────────────────────────────────────────
+            // -- Header row ----------------------------------------------
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -2406,7 +2406,7 @@ class _CompactWorkerCard extends StatelessWidget {
               ],
             ),
 
-            // ── Expanded section ─────────────────────────────────────────
+            // -- Expanded section -----------------------------------------
             if (isExpanded) ...[
               const SizedBox(height: 12),
               Divider(
@@ -2417,7 +2417,7 @@ class _CompactWorkerCard extends StatelessWidget {
               const SizedBox(height: 12),
               if (pills.isNotEmpty) ...[
                 Text(
-                  'Disponibilités',
+                  'Disponibilit�s',
                   style: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.40),
                     fontSize: 10,
@@ -2531,7 +2531,7 @@ class _CompactWorkerCard extends StatelessWidget {
   }
 }
 
-// ── _WorkerMetaRow ─────────────────────────────────────────────────────────────
+// -- _WorkerMetaRow -------------------------------------------------------------
 class _WorkerMetaRow extends StatelessWidget {
   const _WorkerMetaRow({required this.worker});
 
@@ -2571,7 +2571,7 @@ class _WorkerMetaRow extends StatelessWidget {
   }
 }
 
-// ── _NavItem ──────────────────────────────────────────────────────────────────
+// -- _NavItem ------------------------------------------------------------------
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
@@ -2619,7 +2619,7 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-// ── _WorkersEmptyCard (dark) ──────────────────────────────────────────────────
+// -- _WorkersEmptyCard (dark) --------------------------------------------------
 class _WorkerCardSkeleton extends StatefulWidget {
   const _WorkerCardSkeleton();
 
@@ -2778,7 +2778,7 @@ class _WorkersEmptyCard extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Aucun intervenant trouvé',
+              'Aucun intervenant trouv�',
               style: GoogleFonts.cormorantGaramond(
                 color: Colors.white,
                 fontSize: 22,
@@ -2788,7 +2788,7 @@ class _WorkersEmptyCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajustez vos filtres pour voir plus de résultats.',
+              'Ajustez vos filtres pour voir plus de r�sultats.',
               style: GoogleFonts.manrope(
                 color: Colors.white.withValues(alpha: 0.90),
                 fontSize: 13,
@@ -2820,7 +2820,7 @@ class _WorkersEmptyCard extends StatelessWidget {
   }
 }
 
-// ── _WorkersErrorCard (dark) ──────────────────────────────────────────────────
+// -- _WorkersErrorCard (dark) --------------------------------------------------
 class _WorkersErrorCard extends StatelessWidget {
   const _WorkersErrorCard({required this.onRetry});
 
@@ -2856,7 +2856,7 @@ class _WorkersErrorCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Vérifiez votre connexion puis réessayez.',
+              'V�rifiez votre connexion puis r�essayez.',
               style: GoogleFonts.manrope(
                 color: kWhite70,
                 fontSize: 13,
@@ -2878,7 +2878,7 @@ class _WorkersErrorCard extends StatelessWidget {
                 elevation: 0,
               ),
               child: Text(
-                'Réessayer',
+                'R�essayer',
                 style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
               ),
             ),
@@ -2889,9 +2889,9 @@ class _WorkersErrorCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Filter sheet — completely unchanged
-// ═══════════════════════════════════════════════════════════════════════════════
+// -------------------------------------------------------------------------------
+// Filter sheet � completely unchanged
+// -------------------------------------------------------------------------------
 
 class _WorkersFilterSheet extends StatefulWidget {
   const _WorkersFilterSheet({

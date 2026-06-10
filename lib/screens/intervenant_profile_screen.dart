@@ -6,17 +6,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
-import 'package:hotel_lux_os/screens/manager_notifications_screen.dart';
-import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
-import 'package:hotel_lux_os/services/vps_media_service.dart';
-import 'package:hotel_lux_os/widgets/unread_messages_nav_item.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/manager_chat_thread_screen.dart';
+import 'package:stayfix/screens/manager_notifications_screen.dart';
+import 'package:stayfix/services/manager_worker_contact_service.dart';
+import 'package:stayfix/services/vps_media_service.dart';
+import 'package:stayfix/widgets/unread_messages_nav_item.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:hotel_lux_os/providers/hotel_provider.dart';
+import 'package:stayfix/providers/hotel_provider.dart';
 
 // ── Local constants ────────────────────────────────────────────────────────────
 const _kProfBg = Color(0xFF070707);

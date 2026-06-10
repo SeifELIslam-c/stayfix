@@ -1,5 +1,5 @@
-name: hotel_lux_os
-description: "Stayfix Management System"
+name: stayfix
+description: "Stayfix is a property operations and hospitality management app for villas, buildings, apartments, teams, messaging, and service coordination."
 publish_to: 'none'
 version: 1.0.0+8
 

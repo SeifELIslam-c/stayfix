@@ -7,12 +7,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/intervenants_screen.dart';
-import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
-import 'package:hotel_lux_os/screens/manager_offers_screen.dart';
-import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
-import 'package:hotel_lux_os/services/vps_media_service.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/intervenants_screen.dart';
+import 'package:stayfix/screens/manager_chat_thread_screen.dart';
+import 'package:stayfix/screens/manager_offers_screen.dart';
+import 'package:stayfix/screens/manager_property_route_helper.dart';
+import 'package:stayfix/services/vps_media_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 // -- Color constants -----------------------------------------------------------

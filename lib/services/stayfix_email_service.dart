@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:hotel_lux_os/services/app_env.dart';
+import 'package:stayfix/services/app_env.dart';
 
 class StayfixEmailService {
   StayfixEmailService._();

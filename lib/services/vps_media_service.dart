@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:hotel_lux_os/services/app_env.dart';
+import 'package:stayfix/services/app_env.dart';
 import 'package:mime/mime.dart';
 
 class VpsUploadedMedia {

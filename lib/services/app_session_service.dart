@@ -1,4 +1,4 @@
-import 'package:hotel_lux_os/services/property_scope_service.dart';
+import 'package:stayfix/services/property_scope_service.dart';
 
 class AppSessionService {
   AppSessionService._();

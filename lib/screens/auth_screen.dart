@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:country_picker/country_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,12 +6,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/models/hotel_models.dart';
-import 'package:hotel_lux_os/providers/hotel_provider.dart';
-import 'package:hotel_lux_os/screens/dashboard_screen.dart';
-import 'package:hotel_lux_os/screens/manager_navigation.dart';
-import 'package:hotel_lux_os/services/app_session_service.dart';
-import 'package:hotel_lux_os/screens/terms_screen.dart';
+import 'package:stayfix/models/hotel_models.dart';
+import 'package:stayfix/providers/hotel_provider.dart';
+import 'package:stayfix/screens/dashboard_screen.dart';
+import 'package:stayfix/screens/manager_navigation.dart';
+import 'package:stayfix/services/app_session_service.dart';
+import 'package:stayfix/screens/terms_screen.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';

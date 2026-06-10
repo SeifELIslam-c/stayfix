@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:hotel_lux_os/services/app_session_service.dart';
-import 'package:hotel_lux_os/services/vps_media_service.dart';
+import 'package:stayfix/services/app_session_service.dart';
+import 'package:stayfix/services/vps_media_service.dart';
 
 class WorkerBlockedException implements Exception {
   const WorkerBlockedException(this.conversationId);

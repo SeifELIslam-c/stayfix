@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
+import 'package:stayfix/screens/condo_dashboard_screen.dart';
 
 class ImmeubleDashboardScreen extends StatelessWidget {
   const ImmeubleDashboardScreen({

@@ -1,12 +1,12 @@
-ï»¿import 'package:flutter/material.dart';
-import 'package:hotel_lux_os/models/hotel_models.dart';
-import 'package:hotel_lux_os/providers/hotel_provider.dart';
-import 'package:hotel_lux_os/screens/add_staff_screen.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/profile_screen.dart';
-import 'package:hotel_lux_os/screens/room_list_screen.dart';
-import 'package:hotel_lux_os/screens/selection_screen.dart';
-import 'package:hotel_lux_os/screens/supervisor_dashboard.dart';
+import 'package:flutter/material.dart';
+import 'package:stayfix/models/hotel_models.dart';
+import 'package:stayfix/providers/hotel_provider.dart';
+import 'package:stayfix/screens/add_staff_screen.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/profile_screen.dart';
+import 'package:stayfix/screens/room_list_screen.dart';
+import 'package:stayfix/screens/selection_screen.dart';
+import 'package:stayfix/screens/supervisor_dashboard.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -139,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             Text(
-              "${user.role} â€¢ ${provider.selectedHotel?.name ?? '...'}",
+              "${user.role} • ${provider.selectedHotel?.name ?? '...'}",
               style: TextStyle(color: Colors.grey[500], fontSize: 10),
             ),
           ],
@@ -233,7 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             const SizedBox(height: 30),
-            const Text("DIRECTEURS DE DÃ‰PARTEMENT",
+            const Text("DIRECTEURS DE DÉPARTEMENT",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -245,7 +245,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       .where((u) => u.role != UserRoles.director)
                       .isEmpty
                   ? Center(
-                      child: Text("Aucun personnel ajoutÃ©.",
+                      child: Text("Aucun personnel ajouté.",
                           style: TextStyle(color: Colors.grey[600])))
                   : ListView.builder(
                       itemCount: provider.hotelStaff.length,
@@ -272,9 +272,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _statCard("Ã€ Nettoyer", "${tasks.length}", LucideIcons.sprayCan),
+            _statCard("À Nettoyer", "${tasks.length}", LucideIcons.sprayCan),
             const SizedBox(height: 24),
-            const Text("MES TÃ‚CHES",
+            const Text("MES TÂCHES",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -284,7 +284,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Expanded(
               child: tasks.isEmpty
                   ? Center(
-                      child: Text("Aucune chambre Ã  nettoyer.",
+                      child: Text("Aucune chambre à nettoyer.",
                           style: TextStyle(color: Colors.grey[600])))
                   : ListView.builder(
                       itemCount: tasks.length,
@@ -338,7 +338,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             _roomStatsCard(context, provider),
             const SizedBox(height: 24),
-            const Text("Ã‰TAT DES CHAMBRES",
+            const Text("ÉTAT DES CHAMBRES",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -382,7 +382,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
             ),
             const Divider(color: Color(0xFF27272A), height: 30),
-            const Text("MON Ã‰QUIPE",
+            const Text("MON ÉQUIPE",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
@@ -393,7 +393,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               flex: 1,
               child: provider.hotelStaff.isEmpty
                   ? Center(
-                      child: Text("Aucune Ã©quipe.",
+                      child: Text("Aucune équipe.",
                           style: TextStyle(color: Colors.grey[600])))
                   : ListView(
                       children: provider.hotelStaff
@@ -484,8 +484,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   IconData _getRoleIcon(String role) {
-    if (role.contains('RÃ©ception')) return LucideIcons.conciergeBell;
-    if (role.contains('Gouvernante') || role.contains('PropretÃ©'))
+    if (role.contains('Réception')) return LucideIcons.conciergeBell;
+    if (role.contains('Gouvernante') || role.contains('Propreté'))
       return LucideIcons.sparkles;
     if (role.contains('Maintenance')) return LucideIcons.hammer;
     if (role.contains('Superviseur')) return LucideIcons.eye;

@@ -1,11 +1,11 @@
-ï»¿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:hotel_lux_os/providers/hotel_provider.dart';
-import 'package:hotel_lux_os/screens/dashboard_screen.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/manager_profile_config.dart';
+import 'package:stayfix/providers/hotel_provider.dart';
+import 'package:stayfix/screens/dashboard_screen.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/manager_profile_config.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -17,8 +17,8 @@ class SelectionScreen extends StatefulWidget {
 }
 
 class _SelectionScreenState extends State<SelectionScreen> {
-  String _propertyName = 'HÃ´tel';
-  String _propertyPlural = 'HÃ´tels';
+  String _propertyName = 'Hôtel';
+  String _propertyPlural = 'Hôtels';
   IconData _propertyIcon = LucideIcons.building;
   bool _isInitLoaded = false;
 
@@ -62,8 +62,8 @@ class _SelectionScreenState extends State<SelectionScreen> {
                 _propertyIcon = LucideIcons.doorOpen;
                 break;
               default:
-                _propertyName = 'HÃ´tel';
-                _propertyPlural = 'HÃ´tels';
+                _propertyName = 'Hôtel';
+                _propertyPlural = 'Hôtels';
                 _propertyIcon = LucideIcons.building;
             }
           });
@@ -174,7 +174,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
                     ),
                   ),
                   child: const Text(
-                    'CRÃ‰ER',
+                    'CRÉER',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1,
@@ -355,7 +355,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
                 ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
                 const SizedBox(height: 32),
                 Text(
-                  'Aucun(e) $_propertyName trouvÃ©(e).',
+                  'Aucun(e) $_propertyName trouvé(e).',
                   style: TextStyle(color: Colors.grey[400], fontSize: 16),
                 ).animate().fadeIn(delay: 200.ms),
                 const SizedBox(height: 40),
@@ -363,7 +363,7 @@ class _SelectionScreenState extends State<SelectionScreen> {
                   onPressed: () => _showCreateDialog(context),
                   icon: const Icon(LucideIcons.plus, size: 20),
                   label: Text(
-                    'CrÃ©er votre premier $_propertyName',
+                    'Créer votre premier $_propertyName',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,

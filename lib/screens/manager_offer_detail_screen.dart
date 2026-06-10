@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/manager_chat_thread_screen.dart';
-import 'package:hotel_lux_os/services/manager_worker_contact_service.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/manager_chat_thread_screen.dart';
+import 'package:stayfix/services/manager_worker_contact_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class ManagerOfferDetailScreen extends StatelessWidget {

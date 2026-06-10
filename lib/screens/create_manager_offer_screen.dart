@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,20 +7,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/manager_property_route_helper.dart';
-import 'package:hotel_lux_os/services/property_scope_service.dart';
-import 'package:hotel_lux_os/services/vps_media_service.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/manager_property_route_helper.dart';
+import 'package:stayfix/services/property_scope_service.dart';
+import 'package:stayfix/services/vps_media_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-// ── Color constants ───────────────────────────────────────────────────────────
+// -- Color constants -----------------------------------------------------------
 const _kBg = Color(0xFF070707);
 const _kCard = Color(0xFF111111);
 const _kBorder = Color(0x33D6A85A);
 const _kField = Color(0xFF181818);
 
-// ── Departments & specialties ─────────────────────────────────────────────────
+// -- Departments & specialties -------------------------------------------------
 const _kDepartments = [
   'Propose au menage',
   'Maintenance generale',
@@ -55,14 +55,14 @@ const _kDurations = [
   "Moins d'1 heure",
   '1-2 heures',
   '2-4 heures',
-  'Demi-journée',
-  'Journée complète',
-  'À déterminer',
+  'Demi-journ�e',
+  'Journ�e compl�te',
+  '� d�terminer',
 ];
 
-const _kUrgencies = ['Faible', 'Normale', 'Urgente', 'Très urgente'];
+const _kUrgencies = ['Faible', 'Normale', 'Urgente', 'Tr�s urgente'];
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// -- Main screen ---------------------------------------------------------------
 class CreateManagerOfferScreen extends StatefulWidget {
   const CreateManagerOfferScreen({super.key, required this.uid});
   final String uid;
@@ -324,15 +324,15 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       return;
     }
     if (_descCtrl.text.trim().isEmpty) {
-      _showError('Veuillez décrire le travail à effectuer.');
+      _showError('Veuillez d�crire le travail � effectuer.');
       return;
     }
     if (_department == null) {
-      _showError('Veuillez sélectionner un département.');
+      _showError('Veuillez s�lectionner un d�partement.');
       return;
     }
     if (_specialty == null) {
-      _showError('Veuillez sélectionner une spécialité.');
+      _showError('Veuillez s�lectionner une sp�cialit�.');
       return;
     }
     if (_requestedDate == null) {
@@ -346,7 +346,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
     if (!_isNegotiable) {
       final budgetText = _budgetCtrl.text.trim();
       if (budgetText.isEmpty || double.tryParse(budgetText) == null) {
-        _showError('Veuillez indiquer un budget ou activer Négociable.');
+        _showError('Veuillez indiquer un budget ou activer N�gociable.');
         return;
       }
     }
@@ -439,7 +439,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Offre publiée avec succès',
+          content: Text('Offre publi�e avec succ�s',
               style: GoogleFonts.inter(
                   color: Colors.white, fontWeight: FontWeight.w600)),
           backgroundColor: const Color(0xFF22C55E),
@@ -457,7 +457,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
       }
       if (mounted) {
         setState(() => _loading = false);
-        _showError('Erreur lors de la publication. Réessayez.');
+        _showError('Erreur lors de la publication. R�essayez.');
       }
     }
   }
@@ -470,7 +470,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
         children: [
           _CreateOfferHeader(
             onBack: () => Navigator.pop(context),
-            onSaveDraft: () => _showSoon('Brouillon bientôt disponible.'),
+            onSaveDraft: () => _showSoon('Brouillon bient�t disponible.'),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -496,14 +496,14 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  const _SectionTitle('Informations générales'),
+                  const _SectionTitle('Informations g�n�rales'),
 
                   // Title
                   _FieldCard(
                     icon: LucideIcons.fileText,
                     label: "Titre de l'offre *",
                     placeholder:
-                        "Ex: Réparation fuite d'eau dans la salle de bain",
+                        "Ex: R�paration fuite d'eau dans la salle de bain",
                     controller: _titleCtrl,
                   ),
                   const SizedBox(height: 12),
@@ -512,17 +512,17 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   _TextAreaCard(controller: _descCtrl),
 
                   const SizedBox(height: 24),
-                  const _SectionTitle('Catégorie & spécialité'),
+                  const _SectionTitle('Cat�gorie & sp�cialit�'),
 
                   // Department
                   _DropdownCard(
                     icon: LucideIcons.briefcase,
-                    label: 'Département *',
+                    label: 'D�partement *',
                     value: _department,
-                    placeholder: 'Sélectionner un département',
+                    placeholder: 'S�lectionner un d�partement',
                     enabled: true,
                     onTap: () => _pickFromSheet(
-                      'Département',
+                      'D�partement',
                       _kDepartments,
                       _department,
                       (v) => setState(() {
@@ -536,14 +536,14 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   // Specialty
                   _DropdownCard(
                     icon: LucideIcons.settings2,
-                    label: 'Spécialité *',
+                    label: 'Sp�cialit� *',
                     value: _specialty,
-                    placeholder: 'Sélectionner une spécialité',
+                    placeholder: 'S�lectionner une sp�cialit�',
                     enabled: _department != null,
                     onTap: _department == null
                         ? null
                         : () => _pickFromSheet(
-                              'Spécialité',
+                              'Sp�cialit�',
                               _kSpecialties[_department!] ?? [],
                               _specialty,
                               (v) => setState(() => _specialty = v),
@@ -551,7 +551,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  const _SectionTitle("Détails de l'intervention"),
+                  const _SectionTitle("D�tails de l'intervention"),
 
                   // Date + Time
                   Row(
@@ -581,12 +581,12 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                       Expanded(
                         child: _DropdownCard(
                           icon: LucideIcons.clock,
-                          label: 'Durée estimée',
+                          label: 'Dur�e estim�e',
                           value: _estimatedDuration,
-                          placeholder: 'Sélectionner',
+                          placeholder: 'S�lectionner',
                           enabled: true,
                           onTap: () => _pickFromSheet(
-                            'Durée estimée',
+                            'Dur�e estim�e',
                             _kDurations,
                             _estimatedDuration,
                             (v) => setState(() => _estimatedDuration = v),
@@ -623,7 +623,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
 
                   const SizedBox(height: 24),
                   const _SectionTitle(
-                      'Informations complémentaires (optionnel)'),
+                      'Informations compl�mentaires (optionnel)'),
 
                   Row(
                     children: [
@@ -632,7 +632,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                           icon: LucideIcons.image,
                           label: 'Ajouter des photos',
                           onTap: () =>
-                              _showSoon('Ajout de photos bientôt disponible.'),
+                              _showSoon('Ajout de photos bient�t disponible.'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -641,14 +641,14 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
                           icon: LucideIcons.fileText,
                           label: 'Ajouter un document',
                           onTap: () => _showSoon(
-                              'Ajout de documents bientôt disponible.'),
+                              'Ajout de documents bient�t disponible.'),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _OptionalCard(
                           icon: LucideIcons.messageSquare,
-                          label: 'Instructions spéciales',
+                          label: 'Instructions sp�ciales',
                           onTap: _openInstructions,
                           hasContent: _instructionsCtrl.text.isNotEmpty,
                         ),
@@ -683,7 +683,7 @@ class _CreateManagerOfferScreenState extends State<CreateManagerOfferScreen> {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
+// -- Header --------------------------------------------------------------------
 class _PendingOfferPhoto {
   const _PendingOfferPhoto({
     required this.file,
@@ -741,7 +741,7 @@ class _CreateOfferHeader extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Créer une offre',
+                    'Cr�er une offre',
                     style: GoogleFonts.cormorantGaramond(
                       color: Colors.white,
                       fontSize: 22,
@@ -750,7 +750,7 @@ class _CreateOfferHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Décrivez le travail à effectuer et recevez\ndes propositions d\'intervenants qualifiés.',
+                    'D�crivez le travail � effectuer et recevez\ndes propositions d\'intervenants qualifi�s.',
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -781,7 +781,7 @@ class _CreateOfferHeader extends StatelessWidget {
   }
 }
 
-// ── Condo Banner ──────────────────────────────────────────────────────────────
+// -- Condo Banner --------------------------------------------------------------
 class _CondoBanner extends StatelessWidget {
   const _CondoBanner({
     required this.condoName,
@@ -821,7 +821,7 @@ class _CondoBanner extends StatelessWidget {
     }
 
     if (_hasCondo) {
-      // Has condo — show name + address
+      // Has condo � show name + address
       return GestureDetector(
         onTap: onTap,
         child: Container(
@@ -887,7 +887,7 @@ class _CondoBanner extends StatelessWidget {
       );
     }
 
-    // No condo — show "Ajoutez votre condo"
+    // No condo � show "Ajoutez votre condo"
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       decoration: BoxDecoration(
@@ -923,7 +923,7 @@ class _CondoBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'La localisation aide les intervenants à vous trouver.',
+                  'La localisation aide les intervenants � vous trouver.',
                   style: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.55),
                     fontSize: 11,
@@ -965,7 +965,7 @@ class _CondoBanner extends StatelessWidget {
   }
 }
 
-// ── Section Title ─────────────────────────────────────────────────────────────
+// -- Section Title -------------------------------------------------------------
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.title);
   final String title;
@@ -986,7 +986,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ── Single-line Field Card ────────────────────────────────────────────────────
+// -- Single-line Field Card ----------------------------------------------------
 class _FieldCard extends StatelessWidget {
   const _FieldCard({
     required this.icon,
@@ -1053,7 +1053,7 @@ class _FieldCard extends StatelessWidget {
   }
 }
 
-// ── Text Area Card (description) ──────────────────────────────────────────────
+// -- Text Area Card (description) ----------------------------------------------
 class _TextAreaCard extends StatefulWidget {
   const _TextAreaCard({required this.controller});
   final TextEditingController controller;
@@ -1115,7 +1115,7 @@ class _TextAreaCardState extends State<_TextAreaCard> {
             inputFormatters: [LengthLimitingTextInputFormatter(500)],
             decoration: InputDecoration(
               hintText:
-                  "Décrivez en détail le travail à effectuer, les tâches, les attentes...",
+                  "D�crivez en d�tail le travail � effectuer, les t�ches, les attentes...",
               hintStyle: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.30),
                 fontSize: 13,
@@ -1143,7 +1143,7 @@ class _TextAreaCardState extends State<_TextAreaCard> {
   }
 }
 
-// ── Dropdown Field Card ───────────────────────────────────────────────────────
+// -- Dropdown Field Card -------------------------------------------------------
 class _DropdownCard extends StatelessWidget {
   const _DropdownCard({
     required this.icon,
@@ -1228,7 +1228,7 @@ class _DropdownCard extends StatelessWidget {
   }
 }
 
-// ── Date Card ─────────────────────────────────────────────────────────────────
+// -- Date Card -----------------------------------------------------------------
 class _DateCard extends StatelessWidget {
   const _DateCard({
     required this.date,
@@ -1261,7 +1261,7 @@ class _DateCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Date souhaitée *',
+                    'Date souhait�e *',
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -1290,7 +1290,7 @@ class _DateCard extends StatelessWidget {
   }
 }
 
-// ── Time Card ─────────────────────────────────────────────────────────────────
+// -- Time Card -----------------------------------------------------------------
 class _TimeCard extends StatelessWidget {
   const _TimeCard({
     required this.time,
@@ -1323,7 +1323,7 @@ class _TimeCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Heure souhaitée *',
+                    'Heure souhait�e *',
                     style: GoogleFonts.inter(
                       color: Colors.white.withValues(alpha: 0.55),
                       fontSize: 11,
@@ -1352,7 +1352,7 @@ class _TimeCard extends StatelessWidget {
   }
 }
 
-// ── Budget Card ───────────────────────────────────────────────────────────────
+// -- Budget Card ---------------------------------------------------------------
 class _BudgetCard extends StatelessWidget {
   const _BudgetCard({
     required this.controller,
@@ -1382,7 +1382,7 @@ class _BudgetCard extends StatelessWidget {
               const Icon(LucideIcons.dollarSign, color: kAuthGold, size: 18),
               const SizedBox(width: 10),
               Text(
-                'Budget proposé',
+                'Budget propos�',
                 style: GoogleFonts.inter(
                   color: Colors.white,
                   fontSize: 14,
@@ -1391,7 +1391,7 @@ class _BudgetCard extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                'Négociable',
+                'N�gociable',
                 style: GoogleFonts.inter(
                   color: Colors.white.withValues(alpha: 0.70),
                   fontSize: 13,
@@ -1475,7 +1475,7 @@ class _BudgetCard extends StatelessWidget {
           if (isNegotiable) ...[
             const SizedBox(height: 10),
             Text(
-              "Laissez le vide ou activez Négociable si le prix est à discuter avec l'intervenant.",
+              "Laissez le vide ou activez N�gociable si le prix est � discuter avec l'intervenant.",
               style: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.55),
                 fontSize: 12,
@@ -1488,7 +1488,7 @@ class _BudgetCard extends StatelessWidget {
   }
 }
 
-// ── Optional Action Card ──────────────────────────────────────────────────────
+// -- Optional Action Card ------------------------------------------------------
 class _OptionalCard extends StatelessWidget {
   const _OptionalCard({
     required this.icon,
@@ -1543,7 +1543,7 @@ class _OptionalCard extends StatelessWidget {
   }
 }
 
-// ── Publish Button ────────────────────────────────────────────────────────────
+// -- Publish Button ------------------------------------------------------------
 class _SelectedOfferPhotos extends StatelessWidget {
   const _SelectedOfferPhotos({
     required this.photos,
@@ -1730,7 +1730,7 @@ class _PublishButton extends StatelessWidget {
   }
 }
 
-// ── Picker Sheet ──────────────────────────────────────────────────────────────
+// -- Picker Sheet --------------------------------------------------------------
 class _PickerSheet extends StatelessWidget {
   const _PickerSheet({
     required this.title,
@@ -1825,7 +1825,7 @@ class _PickerSheet extends StatelessWidget {
   }
 }
 
-// ── Instructions Sheet ────────────────────────────────────────────────────────
+// -- Instructions Sheet --------------------------------------------------------
 class _InstructionsSheet extends StatelessWidget {
   const _InstructionsSheet({required this.ctrl});
   final TextEditingController ctrl;
@@ -1857,7 +1857,7 @@ class _InstructionsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Instructions spéciales',
+              'Instructions sp�ciales',
               style: GoogleFonts.inter(
                 color: Colors.white,
                 fontSize: 17,
@@ -1879,7 +1879,7 @@ class _InstructionsSheet extends StatelessWidget {
                 style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
                   hintText:
-                      'Précisez toute instruction particulière pour l\'intervenant...',
+                      'Pr�cisez toute instruction particuli�re pour l\'intervenant...',
                   hintStyle: GoogleFonts.inter(
                     color: Colors.white.withValues(alpha: 0.35),
                     fontSize: 13,

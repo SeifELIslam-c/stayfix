@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
-import 'package:hotel_lux_os/screens/condo_dashboard_screen.dart';
-import 'package:hotel_lux_os/screens/immeuble_dashboard.dart';
-import 'package:hotel_lux_os/screens/manager_profile_config.dart';
+import 'package:stayfix/screens/auth_screen.dart';
+import 'package:stayfix/screens/condo_dashboard_screen.dart';
+import 'package:stayfix/screens/immeuble_dashboard.dart';
+import 'package:stayfix/screens/manager_profile_config.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class DirectorTypeScreen extends StatefulWidget {

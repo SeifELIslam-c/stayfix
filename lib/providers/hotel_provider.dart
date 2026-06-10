@@ -6,10 +6,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:hotel_lux_os/core/manager_session_guard.dart';
-import 'package:hotel_lux_os/models/hotel_models.dart';
-import 'package:hotel_lux_os/services/app_session_service.dart';
-import 'package:hotel_lux_os/services/property_scope_service.dart';
+import 'package:stayfix/core/manager_session_guard.dart';
+import 'package:stayfix/models/hotel_models.dart';
+import 'package:stayfix/services/app_session_service.dart';
+import 'package:stayfix/services/property_scope_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -653,10 +653,10 @@ class HotelProvider extends ChangeNotifier {
         currentPassword: currentPassword,
       );
 
-      final batch = _firestore.batch();
-      batch.delete(_firestore.collection('users').doc(authUser.uid));
-      batch.delete(_firestore.collection('profiles').doc(authUser.uid));
-      await batch.commit();
+      await _deleteCurrentUserFirestoreData(
+        authUid: authUser.uid,
+        currentUserId: currentUser.id,
+      );
 
       await authUser.delete();
       await logout();
@@ -697,6 +697,21 @@ class HotelProvider extends ChangeNotifier {
         'Suppression impossible pour le moment.',
       );
     }
+  }
+
+  Future<void> _deleteCurrentUserFirestoreData({
+    required String authUid,
+    required String currentUserId,
+  }) async {
+    final idsToDelete = <String>{authUid, currentUserId}
+      ..removeWhere((value) => value.trim().isEmpty);
+
+    final batch = _firestore.batch();
+    for (final uid in idsToDelete) {
+      batch.delete(_firestore.collection('users').doc(uid));
+      batch.delete(_firestore.collection('profiles').doc(uid));
+    }
+    await batch.commit();
   }
 
   Future<void> _reauthenticateForSensitiveAction({

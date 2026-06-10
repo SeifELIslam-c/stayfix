@@ -1,11 +1,11 @@
-ï»¿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hotel_lux_os/core/manager_session_guard.dart';
-import 'package:hotel_lux_os/providers/hotel_provider.dart';
-import 'package:hotel_lux_os/screens/auth_screen.dart';
+import 'package:stayfix/core/manager_session_guard.dart';
+import 'package:stayfix/providers/hotel_provider.dart';
+import 'package:stayfix/screens/auth_screen.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
@@ -42,21 +42,21 @@ class _ManagerDeviceLockScreenState extends State<ManagerDeviceLockScreen> {
         final biometrics = await _localAuth.getAvailableBiometrics();
         hasEnrolled = biometrics.isNotEmpty;
       } catch (_) {
-        // Cannot query â€” assume nothing enrolled, unlock directly.
+        // Cannot query — assume nothing enrolled, unlock directly.
       }
 
       if (!mounted) return;
 
       if (hasEnrolled) {
-        // Enrolled credentials exist â€” prompt the user.
+        // Enrolled credentials exist — prompt the user.
         bool authenticated = false;
         try {
           authenticated = await _localAuth.authenticate(
             localizedReason:
-                'DÃ©verrouillez StayFix pour retrouver votre session.',
+                'Déverrouillez StayFix pour retrouver votre session.',
           );
         } on PlatformException {
-          // Plugin/OS error â€” treat as no lock so user is never blocked.
+          // Plugin/OS error — treat as no lock so user is never blocked.
           authenticated = true;
         }
 
@@ -64,13 +64,13 @@ class _ManagerDeviceLockScreenState extends State<ManagerDeviceLockScreen> {
 
         if (!authenticated) {
           // User explicitly dismissed the prompt.
-          _showSnack('DÃ©verrouillage annulÃ©');
+          _showSnack('Déverrouillage annulé');
           return;
         }
       }
-      // No enrolled credentials â†’ bypass auth, unlock directly.
+      // No enrolled credentials ? bypass auth, unlock directly.
 
-      // Unlock and navigate â€” account stays remembered on device.
+      // Unlock and navigate — account stays remembered on device.
       ManagerSessionGuard.markUnlocked();
       final destination = await widget.destinationBuilder();
       if (!mounted) return;
@@ -80,7 +80,7 @@ class _ManagerDeviceLockScreenState extends State<ManagerDeviceLockScreen> {
         (_) => false,
       );
     } catch (_) {
-      // Last resort â€” unlock rather than permanently block the user.
+      // Last resort — unlock rather than permanently block the user.
       if (mounted) {
         ManagerSessionGuard.markUnlocked();
         final destination = await widget.destinationBuilder();
@@ -112,7 +112,7 @@ class _ManagerDeviceLockScreenState extends State<ManagerDeviceLockScreen> {
             ),
           ),
           content: Text(
-            'Votre session mÃ©morisÃ©e sera fermÃ©e sur cet appareil.',
+            'Votre session mémorisée sera fermée sur cet appareil.',
             style: GoogleFonts.inter(
               color: Colors.white.withValues(alpha: 0.72),
               fontSize: 14,
@@ -344,7 +344,7 @@ class _LockMainCard extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                'Compte verrouillÃ©',
+                'Compte verrouillé',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cormorantGaramond(
                   color: Colors.white,
@@ -364,7 +364,7 @@ class _LockMainCard extends StatelessWidget {
               ),
               const SizedBox(height: 22),
               Text(
-                'DÃ©verrouillez avec le code, lâ€™empreinte ou Face ID de cet appareil pour retrouver votre session.',
+                'Déverrouillez avec le code, l’empreinte ou Face ID de cet appareil pour retrouver votre session.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   color: Colors.white.withValues(alpha: 0.76),
@@ -449,7 +449,7 @@ class _RememberedSessionInfoCard extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              'Votre compte reste mÃ©morisÃ© sur cet appareil jusquâ€™Ã  ce que vous vous dÃ©connectiez.',
+              'Votre compte reste mémorisé sur cet appareil jusqu’à ce que vous vous déconnectiez.',
               style: GoogleFonts.inter(
                 color: Colors.white.withValues(alpha: 0.72),
                 fontSize: 14,
@@ -532,7 +532,7 @@ class _UnlockButton extends StatelessWidget {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'DÃ©verrouiller',
+                        'Déverrouiller',
                         style: GoogleFonts.inter(
                           color: Colors.black,
                           fontSize: 17,
