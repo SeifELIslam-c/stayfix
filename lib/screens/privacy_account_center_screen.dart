@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,138 +12,621 @@ import 'package:url_launcher/url_launcher.dart';
 const _legalBg = Color(0xFF070707);
 const _legalCard = Color(0xFF111111);
 const _legalBorder = Color(0x33D6A85A);
+const _legalDanger = Color(0xFFB42318);
+
+const List<String> _deleteAccountReasons = <String>[
+  'Je n utilise plus Stayfix',
+  'Je souhaite proteger mes donnees',
+  'Je cree un autre compte',
+  'Je ne trouve plus ce dont j ai besoin',
+  'Autre raison',
+];
 
 Future<void> showDeleteAccountFlow(BuildContext context) async {
-  final provider = Provider.of<HotelProvider>(context, listen: false);
-  final requiresPassword = provider.currentAuthProviders.contains('password');
-  final passwordController = TextEditingController();
-  final confirmation = TextEditingController();
-  bool confirming = false;
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => const DeleteAccountScreen(),
+    ),
+  );
+}
 
-  final confirmed = await showDialog<bool>(
+class DeleteAccountScreen extends StatefulWidget {
+  const DeleteAccountScreen({super.key});
+
+  @override
+  State<DeleteAccountScreen> createState() => _DeleteAccountScreenState();
+}
+
+class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
+  final _passwordController = TextEditingController();
+  final _confirmationController = TextEditingController();
+  String _selectedReason = _deleteAccountReasons.first;
+  bool _isSubmitting = false;
+
+  HotelProvider get _provider =>
+      Provider.of<HotelProvider>(context, listen: false);
+
+  bool get _requiresPassword =>
+      _provider.currentAuthProviders.contains('password');
+
+  bool get _canSubmit {
+    final confirmed = _confirmationController.text.trim().toUpperCase() ==
+        'DELETE';
+    final hasPassword = !_requiresPassword ||
+        _passwordController.text.trim().isNotEmpty;
+    return confirmed && hasPassword && !_isSubmitting;
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickReason() async {
+    final currentIndex = _deleteAccountReasons.indexOf(_selectedReason);
+    final initialIndex = currentIndex < 0 ? 0 : currentIndex;
+    final platform = Theme.of(context).platform;
+    final isApple =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+
+    if (isApple) {
+      var tempIndex = initialIndex;
+      final selected = await showCupertinoModalPopup<String>(
         context: context,
-        builder: (dialogContext) {
-          return StatefulBuilder(
-            builder: (context, setState) {
-              final isValid = confirmation.text.trim().toUpperCase() ==
-                      'DELETE' &&
-                  (!requiresPassword || passwordController.text.trim().isNotEmpty) &&
-                  !confirming;
-              return AlertDialog(
-                backgroundColor: _legalCard,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                title: Text(
-                  'Supprimer le compte',
-                  style: GoogleFonts.inter(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        builder: (popupContext) {
+          return Container(
+            height: 320,
+            padding: const EdgeInsets.only(top: 14),
+            decoration: const BoxDecoration(
+              color: Color(0xFF101010),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => Navigator.of(popupContext).pop(),
+                        child: const Text('Annuler'),
+                      ),
                       Text(
-                        'Cette action supprimera votre compte Auth et vos documents Firestore utilisateur. Elle est irreversible.',
+                        'Motif',
                         style: GoogleFonts.inter(
-                          color: Colors.white.withValues(alpha: 0.78),
-                          height: 1.45,
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      if (requiresPassword) ...[
-                        _DialogInput(
-                          controller: passwordController,
-                          label: 'Mot de passe actuel',
-                          obscureText: true,
-                          onChanged: (_) => setState(() {}),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      _DialogInput(
-                        controller: confirmation,
-                        label: 'Tapez DELETE pour confirmer',
-                        onChanged: (_) => setState(() {}),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        onPressed: () => Navigator.of(popupContext)
+                            .pop(_deleteAccountReasons[tempIndex]),
+                        child: const Text('Valider'),
                       ),
                     ],
                   ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: confirming
-                        ? null
-                        : () => Navigator.pop(dialogContext, false),
-                    child: Text(
-                      'Annuler',
-                      style: GoogleFonts.inter(color: Colors.white70),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 46,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialIndex,
                     ),
+                    onSelectedItemChanged: (index) => tempIndex = index,
+                    children: _deleteAccountReasons
+                        .map(
+                          (reason) => Center(
+                            child: Text(
+                              reason,
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
-                  ElevatedButton(
-                    onPressed: isValid
-                        ? () {
-                            setState(() => confirming = true);
-                            Navigator.pop(dialogContext, true);
-                          }
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB42318),
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(
-                      'Supprimer',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           );
         },
-      ) ??
-      false;
+      );
+      if (selected != null && mounted) {
+        setState(() => _selectedReason = selected);
+      }
+      return;
+    }
 
-  final password = passwordController.text.trim();
-  passwordController.dispose();
-  confirmation.dispose();
-  if (!confirmed || !context.mounted) return;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: _legalCard,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Pourquoi souhaitez-vous supprimer votre compte ?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ..._deleteAccountReasons.map(
+                (reason) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    reason,
+                    style: GoogleFonts.inter(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: _selectedReason == reason
+                      ? const Icon(
+                          LucideIcons.check,
+                          color: Color(0xFFD6A85A),
+                          size: 18,
+                        )
+                      : null,
+                  onTap: () => Navigator.of(sheetContext).pop(reason),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
 
-  final messenger = ScaffoldMessenger.of(context);
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text(
-        'Suppression du compte en cours...',
-        style: GoogleFonts.inter(color: Colors.white),
+    if (selected != null && mounted) {
+      setState(() => _selectedReason = selected);
+    }
+  }
+
+  Future<void> _submitDeletion() async {
+    if (!_canSubmit) return;
+    setState(() => _isSubmitting = true);
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Suppression du compte en cours...',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        backgroundColor: _legalCard,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
       ),
-      backgroundColor: _legalCard,
-      behavior: SnackBarBehavior.floating,
-      duration: const Duration(seconds: 2),
-    ),
-  );
+    );
 
-  final result = await provider.deleteCurrentAccount(
-    currentPassword: password.isEmpty ? null : password,
-  );
-  if (!context.mounted) return;
+    final result = await _provider.deleteCurrentAccount(
+      currentPassword: _passwordController.text.trim().isEmpty
+          ? null
+          : _passwordController.text.trim(),
+    );
+    if (!mounted) return;
 
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text(
-        result.message,
-        style: GoogleFonts.inter(color: Colors.white),
+    setState(() => _isSubmitting = false);
+
+    if (!result.success) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            result.message,
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+          backgroundColor: _legalCard,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    debugPrint('Stayfix delete account reason selected: $_selectedReason');
+    await _showDeletionSuccessDialog();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthScreen()),
+      (_) => false,
+    );
+  }
+
+  Future<void> _showDeletionSuccessDialog() async {
+    final platform = Theme.of(context).platform;
+    final isApple =
+        platform == TargetPlatform.iOS || platform == TargetPlatform.macOS;
+
+    if (isApple) {
+      await showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return CupertinoAlertDialog(
+            title: Column(
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0x1FD6A85A),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    CupertinoIcons.check_mark_circled_solid,
+                    color: Color(0xFFD6A85A),
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Compte supprime',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'Votre compte Stayfix et les donnees associees ont ete supprimes. Vous allez maintenant revenir a la connexion.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: Colors.white.withValues(alpha: 0.78),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Continuer'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: _legalCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0x33D6A85A), Color(0x11D6A85A)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: const Icon(
+                    LucideIcons.badgeCheck,
+                    color: Color(0xFFD6A85A),
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Compte supprime',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Votre compte Stayfix et les donnees associees ont ete supprimes. Vous allez maintenant revenir a la connexion.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    fontSize: 14.5,
+                    height: 1.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD6A85A),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: Text(
+                      'Continuer',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _legalBg,
+      appBar: AppBar(
+        backgroundColor: _legalBg,
+        foregroundColor: Colors.white,
+        title: Text(
+          'Supprimer le compte',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+        ),
       ),
-      backgroundColor: _legalCard,
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-
-  if (!result.success) return;
-  Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute(builder: (_) => const AuthScreen()),
-    (_) => false,
-  );
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _legalCard,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: _legalBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: const Color(0x1FB42318),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    LucideIcons.alertTriangle,
+                    color: Color(0xFFFF8B8D),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'Supprimer definitivement votre compte Stayfix',
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Cette action supprimera votre acces et les documents utilisateur associes a votre compte. Elle est irreversible.',
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    fontSize: 14.5,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          const _LegalSection(
+            title: 'Avant de continuer',
+            icon: LucideIcons.info,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _PolicyBullet(
+                  text:
+                      'Votre connexion actuelle sera fermee sur cet appareil apres confirmation.',
+                ),
+                _PolicyBullet(
+                  text:
+                      'Les informations de profil liees a votre compte seront supprimees.',
+                ),
+                _PolicyBullet(
+                  text:
+                      'Vous pourrez recreer un compte plus tard, mais cette suppression n est pas annulable.',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _LegalSection(
+            title: 'Motif de suppression',
+            icon: LucideIcons.clipboardList,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Choisissez la raison principale pour laquelle vous quittez Stayfix.',
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withValues(alpha: 0.78),
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                InkWell(
+                  onTap: _isSubmitting ? null : _pickReason,
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF171717),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _legalBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectedReason,
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          LucideIcons.chevronDown,
+                          color: Color(0xFFD6A85A),
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          _LegalSection(
+            title: 'Confirmation',
+            icon: LucideIcons.lock,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_requiresPassword) ...[
+                  _DialogInput(
+                    controller: _passwordController,
+                    label: 'Mot de passe actuel',
+                    obscureText: true,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                _DialogInput(
+                  controller: _confirmationController,
+                  label: 'Tapez DELETE pour confirmer',
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Pour des raisons de securite, nous vous demandons une confirmation explicite avant la suppression.',
+                  style: GoogleFonts.inter(
+                    color: Colors.white.withValues(alpha: 0.66),
+                    fontSize: 12.5,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _canSubmit ? _submitDeletion : null,
+              icon: _isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(LucideIcons.trash2, size: 18),
+              label: Text(
+                _isSubmitting
+                    ? 'Suppression en cours...'
+                    : 'Supprimer definitivement mon compte',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _legalDanger,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: _legalDanger.withValues(alpha: 0.45),
+                disabledForegroundColor: Colors.white70,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white70,
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.14),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: Text(
+                'Annuler',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class PrivacyAccountCenterScreen extends StatefulWidget {
@@ -207,7 +691,7 @@ class _PrivacyAccountCenterScreenState
         backgroundColor: _legalBg,
         foregroundColor: Colors.white,
         title: Text(
-          'Politique de confidentialite',
+          'Confidentialite et compte',
           style: GoogleFonts.inter(fontWeight: FontWeight.w700),
         ),
       ),
@@ -366,6 +850,29 @@ class _PrivacyAccountCenterScreenState
                     _PolicyBullet(
                       text:
                           'Vous pouvez supprimer votre compte depuis les reglages. Cette suppression vise le compte Auth et les documents Firestore utilisateur associes.',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              _LegalSection(
+                title: 'Suppression du compte',
+                icon: LucideIcons.trash2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vous pouvez lancer une suppression definitive depuis cet espace. Une page de confirmation vous demandera votre motif et une validation explicite.',
+                      style: GoogleFonts.inter(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _LegalButton(
+                      label: 'Ouvrir la suppression du compte',
+                      icon: LucideIcons.arrowRight,
+                      onTap: () => showDeleteAccountFlow(context),
                     ),
                   ],
                 ),
