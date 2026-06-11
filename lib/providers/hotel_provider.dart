@@ -55,6 +55,7 @@ class HotelProvider extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _lastAuthErrorMessage;
+  bool _lastAuthCreatedAccount = false;
 
   HotelUser? get currentUser => _currentUser;
   Hotel? get selectedHotel => _selectedHotel;
@@ -62,6 +63,7 @@ class HotelProvider extends ChangeNotifier {
   List<HotelUser> get hotelStaff => _hotelStaff;
   bool get isLoading => _isLoading;
   String? get lastAuthErrorMessage => _lastAuthErrorMessage;
+  bool get lastAuthCreatedAccount => _lastAuthCreatedAccount;
 
   List<Room> get rooms {
     final uniqueRoomsMap = {for (var room in _rooms) room.number: room};
@@ -88,6 +90,10 @@ class HotelProvider extends ChangeNotifier {
 
   void _setAuthError(String? message) {
     _lastAuthErrorMessage = message;
+  }
+
+  void _setLastAuthCreatedAccount(bool value) {
+    _lastAuthCreatedAccount = value;
   }
 
   // --- Session Management ---
@@ -122,6 +128,7 @@ class HotelProvider extends ChangeNotifier {
   Future<bool> login(String input, String password) async {
     try {
       _setAuthError(null);
+      _setLastAuthCreatedAccount(false);
       _currentUser = null;
       _selectedHotel = null;
 
@@ -455,6 +462,7 @@ class HotelProvider extends ChangeNotifier {
   Future<bool> loginWithGoogle() async {
     try {
       _setAuthError(null);
+      _setLastAuthCreatedAccount(false);
       final GoogleSignIn googleSignIn = _buildGoogleSignIn();
       // Sign out first so the account picker is always shown,
       // even when a previous session is still cached.
@@ -479,8 +487,10 @@ class HotelProvider extends ChangeNotifier {
 
       final DocumentSnapshot doc =
           await _firestore.collection('users').doc(user.uid).get();
+      final bool createdAccount =
+          userCredential.additionalUserInfo?.isNewUser == true || !doc.exists;
 
-      if (!doc.exists) {
+      if (createdAccount) {
         final String displayName = user.displayName ?? '';
         final List<String> names = displayName.split(' ');
         final String fName = names.isNotEmpty ? names.first : '';
@@ -493,10 +503,12 @@ class HotelProvider extends ChangeNotifier {
           'email': user.email ?? '',
           'role': UserRoles.director,
           'phone': '',
+          'termsAccepted': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
 
+      _setLastAuthCreatedAccount(createdAccount);
       await _fetchUserData(user.uid);
       await _saveSession(user.uid);
       listenToMyHotels();
@@ -520,30 +532,42 @@ class HotelProvider extends ChangeNotifier {
     }
     try {
       _setAuthError(null);
-      final OAuthCredential credential = await _buildAppleOAuthCredential();
+      _setLastAuthCreatedAccount(false);
+      final appleSignIn = await _buildAppleOAuthPayload();
       final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+          await _auth.signInWithCredential(appleSignIn.credential);
       final User? user = userCredential.user;
       if (user == null) return false;
 
       final DocumentSnapshot doc =
           await _firestore.collection('users').doc(user.uid).get();
+      final bool createdAccount =
+          userCredential.additionalUserInfo?.isNewUser == true || !doc.exists;
 
-      if (!doc.exists) {
+      if (createdAccount) {
         final fullName = (userCredential.user?.displayName ?? '').trim();
-        final firstName = _extractFirstName(fullName);
-        final lastName = _extractLastName(fullName);
+        final firstName = appleSignIn.firstName.isNotEmpty
+            ? appleSignIn.firstName
+            : _extractFirstName(fullName);
+        final lastName = appleSignIn.lastName.isNotEmpty
+            ? appleSignIn.lastName
+            : _extractLastName(fullName);
+        final resolvedEmail = (user.email ?? appleSignIn.email).trim();
         await _firestore.collection('users').doc(user.uid).set({
           'firstName': firstName,
           'lastName': lastName,
-          'username': user.email?.split('@')[0] ?? 'stayfix_user',
-          'email': user.email ?? '',
+          'username': resolvedEmail.isNotEmpty
+              ? resolvedEmail.split('@')[0]
+              : 'stayfix_user',
+          'email': resolvedEmail,
           'role': UserRoles.director,
           'phone': '',
+          'termsAccepted': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
 
+      _setLastAuthCreatedAccount(createdAccount);
       await _fetchUserData(user.uid);
       await _saveSession(user.uid);
       listenToMyHotels();
@@ -787,6 +811,10 @@ class HotelProvider extends ChangeNotifier {
   }
 
   Future<OAuthCredential> _buildAppleOAuthCredential() async {
+    return (await _buildAppleOAuthPayload()).credential;
+  }
+
+  Future<_AppleOAuthPayload> _buildAppleOAuthPayload() async {
     final rawNonce = _generateNonce();
     final nonce = _sha256OfString(rawNonce);
     final appleCredential = await SignInWithApple.getAppleIDCredential(
@@ -803,9 +831,14 @@ class HotelProvider extends ChangeNotifier {
         message: 'Apple identity token missing.',
       );
     }
-    return OAuthProvider('apple.com').credential(
-      idToken: idToken,
-      rawNonce: rawNonce,
+    return _AppleOAuthPayload(
+      credential: OAuthProvider('apple.com').credential(
+        idToken: idToken,
+        rawNonce: rawNonce,
+      ),
+      email: (appleCredential.email ?? '').trim(),
+      firstName: (appleCredential.givenName ?? '').trim(),
+      lastName: (appleCredential.familyName ?? '').trim(),
     );
   }
 
@@ -863,4 +896,18 @@ class HotelProvider extends ChangeNotifier {
     final digest = sha256.convert(bytes);
     return digest.toString();
   }
+}
+
+class _AppleOAuthPayload {
+  const _AppleOAuthPayload({
+    required this.credential,
+    required this.email,
+    required this.firstName,
+    required this.lastName,
+  });
+
+  final OAuthCredential credential;
+  final String email;
+  final String firstName;
+  final String lastName;
 }

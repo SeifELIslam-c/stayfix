@@ -160,11 +160,20 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isGoogleLoading = true);
     final provider = Provider.of<HotelProvider>(context, listen: false);
     final bool success = await provider.loginWithGoogle();
+    final bool createdAccount = provider.lastAuthCreatedAccount;
 
     if (!mounted) return;
     setState(() => _isGoogleLoading = false);
     if (success) {
-      _navigateToNextScreen();
+      if (createdAccount) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const TermsScreen()),
+          (route) => false,
+        );
+      } else {
+        _navigateToNextScreen();
+      }
     } else {
       showAuthError(
         context,
@@ -177,11 +186,20 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isAppleLoading = true);
     final provider = Provider.of<HotelProvider>(context, listen: false);
     final bool success = await provider.loginWithApple();
+    final bool createdAccount = provider.lastAuthCreatedAccount;
 
     if (!mounted) return;
     setState(() => _isAppleLoading = false);
     if (success) {
-      _navigateToNextScreen();
+      if (createdAccount) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const TermsScreen()),
+          (route) => false,
+        );
+      } else {
+        _navigateToNextScreen();
+      }
     } else {
       showAuthError(
         context,
