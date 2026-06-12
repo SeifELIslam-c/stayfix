@@ -539,39 +539,21 @@ class HotelProvider extends ChangeNotifier {
       final User? user = userCredential.user;
       if (user == null) return false;
 
-      final DocumentSnapshot doc =
-          await _firestore.collection('users').doc(user.uid).get();
-      final bool createdAccount =
-          userCredential.additionalUserInfo?.isNewUser == true || !doc.exists;
-
-      if (createdAccount) {
-        final fullName = (userCredential.user?.displayName ?? '').trim();
-        final firstName = appleSignIn.firstName.isNotEmpty
-            ? appleSignIn.firstName
-            : _extractFirstName(fullName);
-        final lastName = appleSignIn.lastName.isNotEmpty
-            ? appleSignIn.lastName
-            : _extractLastName(fullName);
-        final resolvedEmail = (user.email ?? appleSignIn.email).trim();
-        await _firestore.collection('users').doc(user.uid).set({
-          'firstName': firstName,
-          'lastName': lastName,
-          'username': resolvedEmail.isNotEmpty
-              ? resolvedEmail.split('@')[0]
-              : 'stayfix_user',
-          'email': resolvedEmail,
-          'role': UserRoles.director,
-          'phone': '',
-          'termsAccepted': false,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
+      final bool createdAccount = await _syncAppleUserProfile(
+        user: user,
+        userCredential: userCredential,
+        appleSignIn: appleSignIn,
+      );
 
       _setLastAuthCreatedAccount(createdAccount);
       await _fetchUserData(user.uid);
       await _saveSession(user.uid);
       listenToMyHotels();
       return true;
+    } on FirebaseAuthException catch (e) {
+      _setAuthError(_appleFirebaseErrorMessage(e));
+      debugPrint('Apple Login Firebase Error: ${e.code} ${e.message}');
+      return false;
     } on SignInWithAppleAuthorizationException catch (e) {
       _setAuthError(
         e.code == AuthorizationErrorCode.canceled
@@ -842,6 +824,64 @@ class HotelProvider extends ChangeNotifier {
     );
   }
 
+  Future<bool> _syncAppleUserProfile({
+    required User user,
+    required UserCredential userCredential,
+    required _AppleOAuthPayload appleSignIn,
+  }) async {
+    final userRef = _firestore.collection('users').doc(user.uid);
+    final doc = await userRef.get();
+    final createdAccount =
+        userCredential.additionalUserInfo?.isNewUser == true || !doc.exists;
+    final fullName = (userCredential.user?.displayName ?? '').trim();
+    final firstName = appleSignIn.firstName.isNotEmpty
+        ? appleSignIn.firstName
+        : _extractFirstName(fullName);
+    final lastName = appleSignIn.lastName.isNotEmpty
+        ? appleSignIn.lastName
+        : _extractLastName(fullName);
+    final resolvedEmail = (user.email ?? appleSignIn.email).trim();
+
+    if (createdAccount) {
+      await userRef.set({
+        'firstName': firstName,
+        'lastName': lastName,
+        'username': resolvedEmail.isNotEmpty
+            ? resolvedEmail.split('@')[0]
+            : 'stayfix_user',
+        'email': resolvedEmail,
+        'role': UserRoles.director,
+        'phone': '',
+        'termsAccepted': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return true;
+    }
+
+    final existingData = doc.data() ?? const <String, dynamic>{};
+    final updates = <String, dynamic>{};
+    if ((existingData['firstName'] as String? ?? '').trim().isEmpty &&
+        firstName.isNotEmpty) {
+      updates['firstName'] = firstName;
+    }
+    if ((existingData['lastName'] as String? ?? '').trim().isEmpty &&
+        lastName.isNotEmpty) {
+      updates['lastName'] = lastName;
+    }
+    if ((existingData['email'] as String? ?? '').trim().isEmpty &&
+        resolvedEmail.isNotEmpty) {
+      updates['email'] = resolvedEmail;
+    }
+    if ((existingData['username'] as String? ?? '').trim().isEmpty &&
+        resolvedEmail.isNotEmpty) {
+      updates['username'] = resolvedEmail.split('@')[0];
+    }
+    if (updates.isNotEmpty) {
+      await userRef.set(updates, SetOptions(merge: true));
+    }
+    return false;
+  }
+
   GoogleSignIn _buildGoogleSignIn() {
     final applePlatforms = defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS;
@@ -863,6 +903,28 @@ class HotelProvider extends ChangeNotifier {
       return 'Connexion Google impossible sans internet.';
     }
     return 'Connexion Google impossible pour le moment.';
+  }
+
+  String _appleFirebaseErrorMessage(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'invalid-credential':
+        return 'Connexion Apple refusee par le service d authentification. Verifiez la configuration Apple dans Firebase et App Store Connect.';
+      case 'missing-or-invalid-nonce':
+      case 'invalid-oauth-response':
+        return 'Connexion Apple impossible a valider. Reessayez dans un instant.';
+      case 'operation-not-allowed':
+        return 'Connexion Apple non active pour cette application.';
+      case 'network-request-failed':
+        return 'Connexion Apple impossible sans internet.';
+      case 'account-exists-with-different-credential':
+        return 'Un compte existe deja avec cet email via une autre methode de connexion.';
+      case 'too-many-requests':
+        return 'Trop de tentatives Apple. Reessayez plus tard.';
+      case 'missing-apple-token':
+        return 'Le jeton Apple est manquant. Reessayez.';
+      default:
+        return 'Connexion Apple impossible pour le moment.';
+    }
   }
 
   String _extractFirstName(String fullName) {
