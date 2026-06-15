@@ -73,7 +73,8 @@ class HotelProvider extends ChangeNotifier {
   }
 
   bool get isDirector => _currentUser?.role == UserRoles.director;
-  Set<String> get currentAuthProviders => _auth.currentUser?.providerData
+  Set<String> get currentAuthProviders =>
+      _auth.currentUser?.providerData
           .map((provider) => provider.providerId)
           .where((provider) => provider.trim().isNotEmpty)
           .toSet() ??
@@ -137,8 +138,10 @@ class HotelProvider extends ChangeNotifier {
           UserCredential cred = await _auth.signInWithEmailAndPassword(
               email: input, password: password);
           await _fetchUserData(cred.user!.uid);
-          if (PropertyScopeService.isStayFixJobOnly(AppSessionService.currentUserData) ||
-              PropertyScopeService.isDisabled(AppSessionService.currentUserData)) {
+          if (PropertyScopeService.isStayFixJobOnly(
+                  AppSessionService.currentUserData) ||
+              PropertyScopeService.isDisabled(
+                  AppSessionService.currentUserData)) {
             await logout();
             return false;
           }
@@ -174,8 +177,10 @@ class HotelProvider extends ChangeNotifier {
       if (snapshot.docs.isNotEmpty) {
         final doc = snapshot.docs.first;
         await _fetchUserData(doc.id);
-        if (PropertyScopeService.isStayFixJobOnly(AppSessionService.currentUserData) ||
-            PropertyScopeService.isDisabled(AppSessionService.currentUserData)) {
+        if (PropertyScopeService.isStayFixJobOnly(
+                AppSessionService.currentUserData) ||
+            PropertyScopeService.isDisabled(
+                AppSessionService.currentUserData)) {
           await logout();
           return false;
         }
@@ -466,9 +471,7 @@ class HotelProvider extends ChangeNotifier {
       final GoogleSignIn googleSignIn = _buildGoogleSignIn();
       // Sign out first so the account picker is always shown,
       // even when a previous session is still cached.
-      await googleSignIn
-          .disconnect()
-          .catchError((_) => null);
+      await googleSignIn.disconnect().catchError((_) => null);
       await googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return false;
@@ -533,11 +536,17 @@ class HotelProvider extends ChangeNotifier {
     try {
       _setAuthError(null);
       _setLastAuthCreatedAccount(false);
-      final appleSignIn = await _buildAppleOAuthPayload();
       final UserCredential userCredential =
-          await _auth.signInWithCredential(appleSignIn.credential);
+          await _signInToFirebaseWithAppleCredential();
       final User? user = userCredential.user;
       if (user == null) return false;
+      final appleSignIn = _lastAppleOAuthPayload;
+      if (appleSignIn == null) {
+        throw FirebaseAuthException(
+          code: 'missing-apple-token',
+          message: 'Apple identity token missing.',
+        );
+      }
 
       final bool createdAccount = await _syncAppleUserProfile(
         user: user,
@@ -718,8 +727,7 @@ class HotelProvider extends ChangeNotifier {
         'Validation Apple annulee: ${error.message}.',
       );
     } on StateError catch (error) {
-      final requiresPassword =
-          error.toString().contains('password-required');
+      final requiresPassword = error.toString().contains('password-required');
       return AccountDeletionResult.failure(
         requiresPassword
             ? 'Saisissez votre mot de passe pour confirmer.'
@@ -769,9 +777,7 @@ class HotelProvider extends ChangeNotifier {
 
     if (providers.contains('google.com')) {
       final googleSignIn = _buildGoogleSignIn();
-      await googleSignIn
-          .disconnect()
-          .catchError((_) => null);
+      await googleSignIn.disconnect().catchError((_) => null);
       await googleSignIn.signOut();
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
@@ -794,6 +800,25 @@ class HotelProvider extends ChangeNotifier {
 
   Future<OAuthCredential> _buildAppleOAuthCredential() async {
     return (await _buildAppleOAuthPayload()).credential;
+  }
+
+  _AppleOAuthPayload? _lastAppleOAuthPayload;
+
+  Future<UserCredential> _signInToFirebaseWithAppleCredential() async {
+    final appleSignIn = await _buildAppleOAuthPayload();
+    _lastAppleOAuthPayload = appleSignIn;
+
+    try {
+      return await _auth.signInWithCredential(appleSignIn.credential);
+    } on FirebaseAuthException catch (error) {
+      if (error.code != 'invalid-credential') rethrow;
+
+      // Apple credentials are short-lived. Request one fresh credential before
+      // surfacing a hard failure so review devices do not get stuck on a stale token.
+      final retryPayload = await _buildAppleOAuthPayload();
+      _lastAppleOAuthPayload = retryPayload;
+      return _auth.signInWithCredential(retryPayload.credential);
+    }
   }
 
   Future<_AppleOAuthPayload> _buildAppleOAuthPayload() async {
