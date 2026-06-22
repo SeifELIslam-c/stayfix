@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StayFix Support</title>
+    <style>
+      :root {
+        --bg: #0a0907;
+        --panel: #151310;
+        --panel-2: #1d1914;
+        --text: #f7f3eb;
+        --muted: #c8bda9;
+        --accent: #d6a85a;
+        --accent-2: #f0cb87;
+        --border: rgba(214, 168, 90, 0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Georgia, "Times New Roman", serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top right, rgba(214, 168, 90, 0.2), transparent 28%),
+          linear-gradient(180deg, #16120d 0%, var(--bg) 58%);
+      }
+
+      .wrap {
+        width: min(960px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 64px;
+      }
+
+      .hero {
+        padding: 28px;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: rgba(17, 15, 12, 0.88);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--accent);
+        font: 600 14px/1.2 Arial, sans-serif;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2.4rem, 6vw, 4.2rem);
+        line-height: 0.95;
+      }
+
+      .lead {
+        max-width: 720px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font: 500 1.02rem/1.7 Arial, sans-serif;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+        margin-top: 22px;
+      }
+
+      .card {
+        padding: 22px;
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        background: linear-gradient(180deg, rgba(29, 25, 20, 0.98), rgba(17, 15, 12, 0.98));
+      }
+
+      .card h2 {
+        font-size: 1.5rem;
+        margin-bottom: 12px;
+      }
+
+      .card p,
+      .card li {
+        color: var(--muted);
+        font: 500 0.98rem/1.7 Arial, sans-serif;
+      }
+
+      .card ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      a {
+        color: var(--accent-2);
+      }
+
+      .cta {
+        display: inline-block;
+        margin-top: 16px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--accent-2), var(--accent));
+        color: #0c0a07;
+        font: 700 0.98rem/1 Arial, sans-serif;
+        text-decoration: none;
+      }
+
+      .footer {
+        margin-top: 22px;
+        color: rgba(247, 243, 235, 0.66);
+        font: 500 0.9rem/1.6 Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="hero">
+        <p class="eyebrow">StayFix Support</p>
+        <h1>Help for your StayFix account and app access.</h1>
+        <p class="lead">
+          If you need help signing in, managing your account, reporting a problem,
+          or requesting account deletion assistance, contact the StayFix support team.
+        </p>
+      </section>
+
+      <section class="grid" aria-label="Support details">
+        <article class="card">
+          <h2>Contact Us</h2>
+          <p>Email support: <a href="mailto:support@stayfix.app">support@stayfix.app</a></p>
+          <p>We can help with sign-in issues, account questions, review access, and general app support.</p>
+          <a class="cta" href="mailto:support@stayfix.app?subject=StayFix%20support">Email Support</a>
+        </article>
+
+        <article class="card">
+          <h2>Common Requests</h2>
+          <ul>
+            <li>Sign in with Apple or Google issues</li>
+            <li>Password reset or login access problems</li>
+            <li>Account deletion help</li>
+            <li>Questions about privacy, profile data, or app behavior</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Account Deletion</h2>
+          <p>
+            You can delete your account from the app in
+            <strong>Privacy and Account Center</strong>.
+            If you need help with that process, contact support by email.
+          </p>
+        </article>
+      </section>
+
+      <p class="footer">
+        StayFix Support Page. This page is intended for users who need assistance and for App Store review support verification.
+      </p>
+    </main>
+  </body>
+</html>

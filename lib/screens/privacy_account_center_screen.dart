@@ -627,7 +627,10 @@ class _PrivacyAccountCenterScreenState
   late final Future<_SupportLinks> _supportFuture = _loadSupportLinks();
 
   Future<_SupportLinks> _loadSupportLinks() async {
-    final supportUrl = await AppEnv.get('STAYFIX_SUPPORT_URL');
+    final supportUrl = await AppEnv.get(
+      'STAYFIX_SUPPORT_URL',
+      fallback: 'https://stayfix-accountdeletion.netlify.app/support/',
+    );
     final supportEmail = await AppEnv.get(
       'STAYFIX_SUPPORT_EMAIL',
       fallback: 'support@stayfix.app',
