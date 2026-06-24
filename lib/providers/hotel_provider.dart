@@ -839,9 +839,13 @@ class HotelProvider extends ChangeNotifier {
       );
     }
     return _AppleOAuthPayload(
-      credential: OAuthProvider('apple.com').credential(
-        idToken: idToken,
-        rawNonce: rawNonce,
+      credential: AppleAuthProvider.credentialWithIDToken(
+        idToken,
+        rawNonce,
+        AppleFullPersonName(
+          givenName: appleCredential.givenName,
+          familyName: appleCredential.familyName,
+        ),
       ),
       email: (appleCredential.email ?? '').trim(),
       firstName: (appleCredential.givenName ?? '').trim(),
